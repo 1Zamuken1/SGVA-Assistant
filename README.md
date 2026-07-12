@@ -1,70 +1,70 @@
 # SGVA Assistant
 
-SGVA Assistant is a modern desktop application built with Node.js and Electron. Its primary objective is to automate the search, extraction, and structuring of sponsored internship offers from the Colombian SENA web portal (SGVA) by leveraging Artificial Intelligence (Groq API).
+SGVA Assistant es una aplicación de escritorio moderna construida con Node.js y Electron. Su objetivo principal es automatizar la búsqueda, extracción y estructuración de ofertas de prácticas patrocinadas del portal web del SENA (SGVA) en Colombia, utilizando Inteligencia Artificial (Groq API).
 
-## Key Features
+## Características Principales
 
-- **Automation (Playwright):** Automatically logs in, navigates through the portal, handles modal alerts, and extracts job offers, simulating human interaction.
-- **AI-Powered Parsing (Groq):** Processes raw, unstructured text from the web portal and automatically structures the data into specific fields: Company, Contact, Responsibilities, and Deadline.
-- **Persistent Storage (Local JSON Database):** Caches every processed offer locally to save time and API tokens in future searches.
-- **Performance Optimization:** Includes a "Low Performance" mode that disables heavy CSS animations and transparency effects to run smoothly on legacy hardware.
-- **Data Export:** Allows users to export the structured results to Microsoft Excel (.xlsx) and Markdown (.md) formats with a single click.
-- **Modern User Interface:** Built with vanilla HTML/CSS/JS using a Glassmorphism design system, dark mode, an animated stepper, and a live console log.
-
----
-
-## Prerequisites
-
-- **Operating System:** Windows 10/11
-- **Credentials:** Active SENA apprentice account with access to the SGVA portal.
-- **Groq API Key:** A free API key from [console.groq.com](https://console.groq.com/).
+- **Automatización (Playwright):** Inicia sesión automáticamente, navega por el portal, maneja alertas modales y extrae las ofertas de empleo, simulando la interacción humana.
+- **Análisis con Inteligencia Artificial (Groq):** Procesa el texto crudo y sin estructura del portal web y organiza automáticamente los datos en campos específicos: Empresa, Contacto, Funciones y Fecha Límite.
+- **Almacenamiento Persistente (Base de Datos Local JSON):** Guarda en caché cada oferta procesada localmente para ahorrar tiempo y tokens de API en búsquedas futuras.
+- **Optimización de Rendimiento:** Incluye un modo de "Bajo Rendimiento" que desactiva animaciones CSS pesadas y efectos de transparencia para funcionar fluidamente en hardware antiguo.
+- **Exportación de Datos:** Permite a los usuarios exportar los resultados estructurados a formatos Microsoft Excel (.xlsx) y Markdown (.md) con un solo clic.
+- **Interfaz de Usuario Moderna:** Construida con HTML/CSS/JS nativo utilizando un sistema de diseño basado en Glassmorphism, modo oscuro, un indicador de progreso animado y un registro de consola en vivo.
 
 ---
 
-## Usage Guide
+## Requisitos Previos
 
-1. **Configuration:** Navigate to the **Configuración** tab. Enter your username, password, Groq API Key, and select your target department and city.
-2. **Parameters:** Choose the extraction limit (e.g., "First 10") or choose to extract all available offers.
-3. **Execution:** Navigate to the **Extractor** tab and click *Iniciar*. A visual stepper will display the robot's current progress.
-4. **Review & Export:** Navigate to the **Ofertas** tab. Use the search bar to filter by keywords, review the cards, and use the export button to generate an Excel file with all the retrieved data.
+- **Sistema Operativo:** Windows 10/11
+- **Credenciales:** Cuenta activa de aprendiz del SENA con acceso al portal SGVA.
+- **Groq API Key:** Una clave de API gratuita de [console.groq.com](https://console.groq.com/).
 
 ---
 
-## Development Setup
+## Guía de Uso
 
-### Local Installation
-Clone this repository and install the required dependencies (Playwright, Groq SDK, ExcelJS, Electron):
+1. **Configuración:** Navega a la pestaña **Configuración**. Ingresa tu usuario, contraseña, API Key de Groq y selecciona tu departamento y ciudad objetivo.
+2. **Parámetros:** Elige el límite de extracción (por ejemplo, "Primeras 10") o elige extraer todas las ofertas disponibles.
+3. **Ejecución:** Navega a la pestaña **Extractor** y haz clic en *Iniciar*. Un indicador visual mostrará el progreso actual del robot.
+4. **Revisión y Exportación:** Navega a la pestaña **Ofertas**. Usa la barra de búsqueda para filtrar por palabras clave, revisa las tarjetas y usa el botón de exportar para generar un archivo Excel con todos los datos recuperados.
+
+---
+
+## Configuración para Desarrollo
+
+### Instalación Local
+Clona este repositorio e instala las dependencias requeridas (Playwright, Groq SDK, ExcelJS, Electron):
 ```bash
-git clone https://github.com/your-username/sgva-assistant.git
+git clone https://github.com/1Zamuken1/SGVA-Assistant.git
 cd sgva-assistant
 npm install
 ```
 
-### Development Mode
-To run the application in development mode with DevTools enabled:
+### Modo de Desarrollo
+Para ejecutar la aplicación en modo de desarrollo con las herramientas de desarrollador habilitadas:
 ```bash
 npm start
 ```
 
-### Build for Production (.exe)
-To generate a 1-click Windows installer:
+### Compilar para Producción (.exe)
+Para generar un instalador de Windows de 1 clic:
 ```bash
 npm run build
 ```
-This command will create an `.exe` installer in the `dist/` directory using `electron-builder`.
+Este comando creará un instalador `.exe` en el directorio `dist/` usando `electron-builder`.
 
 ---
 
-## Technical Architecture
+## Arquitectura Técnica
 
-- **Frontend:** Semantic HTML5, Pure CSS3 (CSS Variables, Flexbox, Grid, no external frameworks), Vanilla JS (`app.js`).
-- **Backend / Orchestrator:** Node.js with `Electron` (Main process) and bidirectional IPC channels.
-- **Web Scraping:** `Playwright-core` Chromium engine.
-- **Natural Language Processing:** `llama-3.1-8b-instant` model via the `groq` SDK.
-- **Local File System:** Asynchronous reading and writing of JSON files via Node.js native `fs` module.
+- **Frontend:** HTML5 Semántico, CSS3 Puro (Variables CSS, Flexbox, Grid, sin frameworks externos), JavaScript Vanilla (`app.js`).
+- **Backend / Orquestador:** Node.js con `Electron` (Proceso principal) y canales IPC bidireccionales.
+- **Web Scraping:** Motor Chromium de `Playwright-core`.
+- **Procesamiento de Lenguaje Natural:** Modelo `llama-3.1-8b-instant` a través del SDK de `groq`.
+- **Sistema de Archivos Local:** Lectura y escritura asíncrona de archivos JSON a través del módulo nativo `fs` de Node.js.
 
 ---
 
-## License
+## Licencia
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo [LICENSE](LICENSE) para más detalles.
