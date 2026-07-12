@@ -1,0 +1,29 @@
+# Credenciales y configuración local — NUNCA subir al repo
+.env
+
+# Dependencias de Node.js
+node_modules/
+
+# Perfil persistente del navegador (Playwright) — datos de usuario
+perfil_navegador/
+
+# Base de datos local generada por la app
+ofertas_db.json
+
+# Carpeta de distribución generada por electron-builder
+dist/
+
+# Archivos de caché y build temporales
+build/
+*.spec
+
+# IDE y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini

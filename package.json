@@ -1,0 +1,44 @@
+{
+  "name": "sgva-assistant",
+  "version": "1.0.0",
+  "description": "Automatización de extracción de ofertas SGVA con interfaz web",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "keywords": [
+    "sgva",
+    "sena",
+    "playwright",
+    "scraper"
+  ],
+  "author": "SGVA Assistant",
+  "license": "ISC",
+  "build": {
+    "appId": "com.sgva.assistant",
+    "productName": "SGVA Assistant",
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true
+    },
+    "directories": {
+      "output": "dist"
+    }
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
+    "groq-sdk": "^1.3.0",
+    "playwright": "^1.61.1"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}

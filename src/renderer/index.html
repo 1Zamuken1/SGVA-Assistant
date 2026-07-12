@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SGVA Assistant</title>
+  <meta name="description" content="Automatiza la búsqueda de prácticas patrocinadas del SENA con IA.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="app-container">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="ph-fill ph-rocket-launch"></i>
+        </div>
+        <div class="brand-text">
+          <h1>SGVA</h1>
+          <span>Assistant</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-target="dashboard">
+          <span class="nav-icon"><i class="ph ph-house"></i></span>
+          <span class="nav-label">Inicio</span>
+        </button>
+        <button class="nav-item" data-target="extractor">
+          <span class="nav-icon"><i class="ph ph-robot"></i></span>
+          <span class="nav-label">Extractor</span>
+        </button>
+        <button class="nav-item" data-target="results">
+          <span class="nav-icon"><i class="ph ph-briefcase"></i></span>
+          <span class="nav-label">Ofertas</span>
+          <span class="badge" id="offers-badge" style="display:none">0</span>
+        </button>
+        <button class="nav-item" data-target="settings">
+          <span class="nav-icon"><i class="ph ph-sliders-horizontal"></i></span>
+          <span class="nav-label">Configuración</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="version-chip">
+          <i class="ph ph-cpu"></i>
+          <span>v3.0 · Electron</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="content-area">
+
+      <!-- ======================== DASHBOARD ======================== -->
+      <section id="dashboard" class="view active">
+        <div class="page-header">
+          <div class="page-title-group">
+            <p class="page-eyebrow">Panel de Control</p>
+            <h2>Bienvenido a SGVA Assistant</h2>
+            <p class="page-subtitle">Automatiza la búsqueda de prácticas patrocinadas del SENA con ayuda de inteligencia artificial.</p>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <!-- Card: Cómo funciona -->
+          <div class="info-card glass-card">
+            <div class="info-card-header">
+              <div class="card-icon-box icon-blue">
+                <i class="ph-fill ph-info"></i>
+              </div>
+              <h3>¿Cómo funciona?</h3>
+            </div>
+            <div class="steps-flow">
+              <div class="flow-step">
+                <div class="step-num">1</div>
+                <div>
+                  <strong>Configura</strong>
+                  <p>Ingresa tus credenciales SGVA y tu API Key de Groq.</p>
+                </div>
+              </div>
+              <div class="flow-connector"></div>
+              <div class="flow-step">
+                <div class="step-num">2</div>
+                <div>
+                  <strong>Extrae</strong>
+                  <p>El robot navega automáticamente el portal del SENA.</p>
+                </div>
+              </div>
+              <div class="flow-connector"></div>
+              <div class="flow-step">
+                <div class="step-num">3</div>
+                <div>
+                  <strong>Analiza</strong>
+                  <p>La IA estructura y organiza cada oferta encontrada.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card: Acción rápida -->
+          <div class="action-card" id="go-settings-btn">
+            <div class="action-card-bg"></div>
+            <div class="action-card-content">
+              <div class="card-icon-box icon-accent">
+                <i class="ph-fill ph-lightning"></i>
+              </div>
+              <h3>Comenzar ahora</h3>
+              <p>Configura tus credenciales del portal SGVA y obtén tu API Key de Groq gratuita para comenzar.</p>
+              <button class="btn btn-white">
+                <i class="ph ph-arrow-right"></i>
+                Ir a configuración
+              </button>
+            </div>
+          </div>
+
+          <!-- Card: Aviso -->
+          <div class="notice-card">
+            <div class="notice-icon"><i class="ph-fill ph-shield-check"></i></div>
+            <div class="notice-body">
+              <strong>Tus datos son privados</strong>
+              <p>Las credenciales solo se guardan en tu computadora. Nunca se envían a ningún servidor externo.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================== EXTRACTOR ======================== -->
+      <section id="extractor" class="view">
+        <div class="page-header">
+          <div class="page-title-group">
+            <p class="page-eyebrow">Automatización</p>
+            <h2>Extractor Automático</h2>
+            <p class="page-subtitle">El robot buscará y extraerá ofertas de práctica directamente desde el portal SGVA.</p>
+          </div>
+        </div>
+
+        <!-- Aviso banner -->
+        <div class="alert-banner">
+          <i class="ph-fill ph-warning"></i>
+          <p>Se abrirá una ventana de navegador. No la cierres mientras el proceso esté activo. Solo interactúa si el sitio te pide un captcha.</p>
+        </div>
+
+        <!-- Stepper Principal -->
+        <div class="stepper-card glass-card" id="stepper-container">
+
+          <!-- Estado Idle -->
+          <div id="stepper-idle" class="stepper-idle">
+            <div class="idle-illustration">
+              <div class="idle-icon-ring">
+                <i class="ph-fill ph-robot"></i>
+              </div>
+              <div class="idle-pulse"></div>
+            </div>
+            <h3>Todo listo para iniciar</h3>
+            <p>El extractor navegará el portal, recopilará y analizará las ofertas con IA automáticamente.</p>
+            <button id="btn-start" class="btn btn-primary btn-large">
+              <i class="ph-bold ph-play"></i>
+              Iniciar Extracción
+            </button>
+          </div>
+
+          <!-- Estado Progreso -->
+          <div id="stepper-progress" class="stepper-progress" style="display: none;">
+            <div class="stepper-header">
+              <div class="processing-indicator">
+                <div class="spin-ring"></div>
+                <i class="ph ph-brain"></i>
+              </div>
+              <div>
+                <h3>Procesando...</h3>
+                <p class="text-muted">No cierres el navegador que se abrió.</p>
+              </div>
+            </div>
+
+            <div class="steps-track">
+              <div class="step-track-item" id="step-browser" data-step="browser">
+                <div class="track-indicator">
+                  <div class="track-dot"><i class="ph ph-globe"></i></div>
+                  <div class="track-line"></div>
+                </div>
+                <div class="track-content">
+                  <h4>Abriendo navegador</h4>
+                  <p>Iniciando Chromium y conectando con SGVA...</p>
+                </div>
+              </div>
+              <div class="step-track-item" id="step-login" data-step="login">
+                <div class="track-indicator">
+                  <div class="track-dot"><i class="ph ph-sign-in"></i></div>
+                  <div class="track-line"></div>
+                </div>
+                <div class="track-content">
+                  <h4>Iniciando sesión</h4>
+                  <p>Ingresando credenciales al portal del SENA...</p>
+                </div>
+              </div>
+              <div class="step-track-item" id="step-navigate" data-step="navigate">
+                <div class="track-indicator">
+                  <div class="track-dot"><i class="ph ph-map-trifold"></i></div>
+                  <div class="track-line"></div>
+                </div>
+                <div class="track-content">
+                  <h4>Navegando a solicitudes</h4>
+                  <p>Accediendo a la sección de ofertas de práctica...</p>
+                </div>
+              </div>
+              <div class="step-track-item" id="step-search" data-step="search">
+                <div class="track-indicator">
+                  <div class="track-dot"><i class="ph ph-magnifying-glass"></i></div>
+                  <div class="track-line"></div>
+                </div>
+                <div class="track-content">
+                  <h4>Buscando y filtrando</h4>
+                  <p>Aplicando filtros de ubicación y extrayendo tarjetas...</p>
+                </div>
+              </div>
+              <div class="step-track-item" id="step-ai" data-step="ai">
+                <div class="track-indicator">
+                  <div class="track-dot"><i class="ph ph-sparkle"></i></div>
+                </div>
+                <div class="track-content">
+                  <h4>Analizando con IA</h4>
+                  <p>Groq estructura la información de cada oferta...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Estado Éxito -->
+          <div id="stepper-done" class="stepper-result" style="display: none;">
+            <div class="result-icon-wrap result-success-wrap">
+              <i class="ph-bold ph-check-fat"></i>
+            </div>
+            <h3 id="done-title">Extracción completada</h3>
+            <p id="done-message" class="text-muted">Se procesaron las ofertas correctamente.</p>
+            <button id="btn-go-results" class="btn btn-primary">
+              <i class="ph ph-briefcase"></i>
+              Ver Ofertas
+            </button>
+          </div>
+
+          <!-- Estado Error -->
+          <div id="stepper-error" class="stepper-result" style="display: none;">
+            <div class="result-icon-wrap result-error-wrap">
+              <i class="ph-bold ph-x-circle"></i>
+            </div>
+            <h3 id="error-title">No se pudo completar</h3>
+            <p id="error-message" class="text-muted"></p>
+            <button id="btn-retry" class="btn btn-danger">
+              <i class="ph ph-arrow-clockwise"></i>
+              Reintentar
+            </button>
+          </div>
+        </div>
+
+        <!-- Log técnico colapsable -->
+        <details class="technical-log" id="technical-log">
+          <summary>
+            <i class="ph ph-terminal"></i>
+            <span>Detalles técnicos</span>
+            <i class="ph ph-caret-right summary-arrow"></i>
+          </summary>
+          <div class="log-body">
+            <div class="log-toolbar">
+              <span><i class="ph-fill ph-circle" style="color:#ef4444; font-size:10px"></i></span>
+              <span><i class="ph-fill ph-circle" style="color:#f59e0b; font-size:10px"></i></span>
+              <span><i class="ph-fill ph-circle" style="color:#10b981; font-size:10px"></i></span>
+              <span class="log-title">stdout</span>
+            </div>
+            <div class="terminal-output" id="terminal-output">Esperando iniciar...</div>
+          </div>
+        </details>
+      </section>
+
+      <!-- ======================== RESULTS ======================== -->
+      <section id="results" class="view">
+        <div class="page-header results-page-header">
+          <div class="page-title-group">
+            <p class="page-eyebrow">Resultados</p>
+            <h2>Ofertas de Práctica</h2>
+            <p class="page-subtitle">Información estructurada y analizada por IA, lista para revisar.</p>
+          </div>
+          <div class="results-stats">
+            <div class="stat-chip" id="stat-total">
+              <i class="ph-fill ph-briefcase"></i>
+              <span id="stat-total-num">0</span>
+              <span>empresas</span>
+            </div>
+            <div class="custom-select-wrapper" id="wrapper-export">
+              <div class="btn btn-outline" id="trigger-export" style="border-radius: var(--radius-xl);">
+                <i class="ph ph-download-simple"></i>
+                <span>Exportar</span>
+                <i class="ph ph-caret-down"></i>
+              </div>
+              <div class="custom-options" id="options-export" style="width: 150px; right: 0; left: auto; top: calc(100% + 5px);">
+                <div class="custom-option" data-value="excel"><i class="ph ph-file-xls"></i> Exportar a Excel</div>
+                <div class="custom-option" data-value="markdown"><i class="ph ph-file-text"></i> Exportar a Markdown</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra de búsqueda -->
+        <div class="search-row">
+          <div class="search-box">
+            <i class="ph ph-magnifying-glass search-icon"></i>
+            <input type="text" id="search-ofertas" placeholder="Buscar empresa, contacto o función...">
+            <div class="search-clear" id="search-clear" style="display:none">
+              <i class="ph ph-x"></i>
+            </div>
+          </div>
+        </div>
+
+        <div id="results-container" class="results-grid">
+          <div class="empty-state">
+            <div class="empty-illustration">
+              <i class="ph ph-briefcase-metal"></i>
+            </div>
+            <h3>Sin ofertas todavía</h3>
+            <p>Inicia el extractor para encontrar ofertas de práctica disponibles en el portal SGVA.</p>
+            <button class="btn btn-outline" onclick="document.querySelector('[data-target=extractor]').click()">
+              <i class="ph ph-robot"></i>
+              Ir al Extractor
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================== SETTINGS ======================== -->
+      <section id="settings" class="view">
+        <div class="page-header">
+          <div class="page-title-group">
+            <p class="page-eyebrow">Ajustes</p>
+            <h2>Configuración</h2>
+            <p class="page-subtitle">Ajusta tus credenciales y preferencias de búsqueda.</p>
+          </div>
+        </div>
+
+        <div class="settings-layout">
+
+          <!-- Columna izquierda: Formulario -->
+          <div class="settings-main">
+
+            <!-- Sección: Credenciales -->
+            <div class="settings-section glass-card">
+              <div class="settings-section-header">
+                <div class="section-icon icon-blue"><i class="ph ph-key"></i></div>
+                <div>
+                  <h3>Credenciales SGVA</h3>
+                  <p class="text-muted">Datos de acceso al portal del SENA</p>
+                </div>
+              </div>
+              <form id="settings-form">
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label class="field-label">Usuario (Documento)</label>
+                    <div class="field-input">
+                      <i class="ph ph-identification-card field-icon"></i>
+                      <input type="text" id="sgva-user" placeholder="Ej: 1001234567">
+                    </div>
+                  </div>
+                  <div class="form-field">
+                    <label class="field-label">Contraseña SGVA</label>
+                    <div class="field-input">
+                      <i class="ph ph-lock-simple field-icon"></i>
+                      <input type="password" id="sgva-pass" placeholder="••••••••">
+                      <button type="button" class="field-action" id="toggle-pass" title="Mostrar/Ocultar">
+                        <i class="ph ph-eye"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="form-field full-width">
+                    <label class="field-label">API Key de Groq (IA Gratuita)</label>
+                    <div class="field-input">
+                      <i class="ph ph-sparkle field-icon"></i>
+                      <input type="password" id="groq-key" placeholder="gsk_...">
+                      <button type="button" class="field-action" id="toggle-groq" title="Mostrar/Ocultar">
+                        <i class="ph ph-eye"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <!-- Sección: Ubicación -->
+            <div class="settings-section glass-card">
+              <div class="settings-section-header">
+                <div class="section-icon icon-green"><i class="ph ph-map-pin"></i></div>
+                <div>
+                  <h3>Filtro de Ubicación</h3>
+                  <p class="text-muted">Filtra las ofertas por tu departamento y ciudad</p>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label class="field-label">Departamento</label>
+                  <div class="custom-select-wrapper" id="wrapper-dept">
+                    <div class="custom-select">
+                      <div class="custom-select-trigger" id="trigger-dept">
+                        <span>Seleccione un departamento</span>
+                        <i class="ph ph-caret-down"></i>
+                      </div>
+                      <div class="custom-options" id="options-dept"></div>
+                    </div>
+                    <input type="hidden" id="sgva-dept">
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="field-label">Ciudad</label>
+                  <div class="custom-select-wrapper" id="wrapper-city">
+                    <div class="custom-select disabled">
+                      <div class="custom-select-trigger" id="trigger-city">
+                        <span>Seleccione una ciudad</span>
+                        <i class="ph ph-caret-down"></i>
+                      </div>
+                      <div class="custom-options" id="options-city"></div>
+                    </div>
+                    <input type="hidden" id="sgva-city">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sección: Extracción -->
+            <div class="settings-section glass-card">
+              <div class="settings-section-header">
+                <div class="section-icon icon-purple"><i class="ph ph-funnel"></i></div>
+                <div>
+                  <h3>Parámetros de Extracción</h3>
+                  <p class="text-muted">Controla cuántas y cuáles ofertas procesar</p>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label class="field-label">Límite de Extracción</label>
+                  <div class="custom-select-wrapper" id="wrapper-limit">
+                    <div class="custom-select" id="cs-limit">
+                      <div class="custom-select-trigger" id="trigger-limit">
+                        <span>Extraer Todas</span>
+                        <i class="ph ph-caret-down"></i>
+                      </div>
+                      <div class="custom-options" id="options-limit">
+                        <div class="custom-option" data-value="0">Extraer Todas</div>
+                        <div class="custom-option" data-value="10">Máximo 10</div>
+                        <div class="custom-option" data-value="20">Máximo 20</div>
+                        <div class="custom-option" data-value="50">Máximo 50</div>
+                      </div>
+                    </div>
+                    <input type="hidden" id="sgva-limit" value="0">
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="field-label">Orden de Extracción</label>
+                  <div class="custom-select-wrapper" id="wrapper-order">
+                    <div class="custom-select" id="cs-order">
+                      <div class="custom-select-trigger" id="trigger-order">
+                        <span>Las primeras que encuentre</span>
+                        <i class="ph ph-caret-down"></i>
+                      </div>
+                      <div class="custom-options" id="options-order">
+                        <div class="custom-option" data-value="first">Las primeras que encuentre</div>
+                        <div class="custom-option" data-value="last">Las últimas (Más recientes)</div>
+                      </div>
+                    </div>
+                    <input type="hidden" id="sgva-order" value="first">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sección: Rendimiento -->
+            <div class="settings-section glass-card">
+              <div class="settings-section-header">
+                <div class="section-icon icon-orange"><i class="ph ph-gauge"></i></div>
+                <div>
+                  <h3>Rendimiento</h3>
+                  <p class="text-muted">Optimización para equipos de bajos recursos</p>
+                </div>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <strong>Modo Bajo Rendimiento</strong>
+                  <p class="text-muted">Desactiva efectos de transparencia y animaciones. Ideal para PCs de bajos recursos o que se calientan fácilmente.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="sgva-low-end">
+                  <span class="toggle-track">
+                    <span class="toggle-thumb"></span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <button type="submit" form="settings-form" class="btn btn-primary btn-save">
+              <i class="ph ph-floppy-disk"></i>
+              Guardar Configuración
+            </button>
+          </div>
+
+          <!-- Columna derecha: Ayuda -->
+          <div class="settings-sidebar">
+            <div class="help-card glass-card">
+              <div class="help-card-header">
+                <i class="ph-fill ph-question"></i>
+                <h3>¿Cómo obtener la API Key?</h3>
+              </div>
+              <div class="help-steps">
+                <div class="help-step">
+                  <div class="help-step-num">1</div>
+                  <p>Visita <a href="#" class="link" id="groq-link">console.groq.com</a></p>
+                </div>
+                <div class="help-step">
+                  <div class="help-step-num">2</div>
+                  <p>Crea una cuenta gratuita con Google o Github.</p>
+                </div>
+                <div class="help-step">
+                  <div class="help-step-num">3</div>
+                  <p>Ve a la sección <strong>API Keys</strong> del menú.</p>
+                </div>
+                <div class="help-step">
+                  <div class="help-step-num">4</div>
+                  <p>Haz clic en <strong>"Create API Key"</strong>.</p>
+                </div>
+                <div class="help-step">
+                  <div class="help-step-num">5</div>
+                  <p>Copia el código y pégalo en el campo de arriba.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="tip-card">
+              <i class="ph-fill ph-lightbulb"></i>
+              <div>
+                <strong>Consejo</strong>
+                <p>La API de Groq es completamente gratuita para uso personal. No necesitas tarjeta de crédito.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
