@@ -1,6 +1,6 @@
 {
   "name": "sgva-assistant",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Automatización de extracción de ofertas SGVA con interfaz web",
   "main": "src/main/main.js",
   "scripts": {
