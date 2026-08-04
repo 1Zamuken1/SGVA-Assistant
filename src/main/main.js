@@ -79,8 +79,13 @@ ipcMain.handle('start-scraping', async (event, config) => {
 // Canal para obtener ofertas previamente guardadas
 const database = require('./database');
 ipcMain.handle('get-saved-offers', async () => {
-  return database.obtenerTodas();
-});
+   return database.obtenerTodas();
+ });
+
+ ipcMain.handle('clear-database', async () => {
+   database.limpiarBaseDeDatos();
+   return { success: true };
+ });
 
 ipcMain.handle('export-data', async (event, data, format) => {
   try {

@@ -403,6 +403,36 @@ btnStart.addEventListener('click', async () => {
   window.api.onScraperLog(message => addLog(message));
 
   try {
+    const savedOffers = await window.api.getSavedOffers();
+    const savedCount = savedOffers ? savedOffers.length : 0;
+
+    let scanAction = 'accumulate';
+
+    if (savedCount > 0) {
+      const preference = getScanModePreference();
+
+      if (preference === 'replace') {
+        scanAction = 'replace';
+      } else if (preference === 'accumulate') {
+        scanAction = 'accumulate';
+      } else {
+        scanAction = await showScanDecisionModal(savedCount);
+      }
+    }
+
+    if (scanAction === null) {
+      isExtracting = false;
+      window.api.removeAllScraperListeners();
+      showState('idle');
+      resetStepper();
+      return;
+    }
+
+    if (scanAction === 'replace') {
+      await window.api.clearDatabase();
+      addLog('Base de datos limpiada antes del escaneo.');
+    }
+
     const response = await window.api.startScraping({
       username: user, password: pass, groqApiKey: groq,
       departamento: dept, ciudad: city, limit, order
@@ -435,7 +465,127 @@ btnStart.addEventListener('click', async () => {
 document.getElementById('btn-retry').addEventListener('click', () => { showState('idle'); resetStepper(); });
 document.getElementById('btn-go-results').addEventListener('click', () => switchView('results'));
 
-// ===== Persistence & Search =====
+// ===== Limpiar BD desde resultados =====
+const btnClearResults = document.getElementById('btn-clear-results');
+if (btnClearResults) {
+  btnClearResults.addEventListener('click', async () => {
+    if (currentOffers.length === 0) return;
+    try {
+      await window.api.clearDatabase();
+      currentOffers = [];
+      renderResults(currentOffers);
+      updateOfferCount(0);
+      addLog('Base de datos limpiada desde resultados.');
+    } catch (e) {
+      console.error('Error al limpiar la base de datos:', e);
+    }
+  });
+}
+
+// ===== Modal: Decisión de escaneo =====
+const scanDecisionModal = document.getElementById('scan-decision-modal');
+const modalSubtitle = document.getElementById('modal-subtitle');
+const modalReplace = document.querySelector('.modal-option-replace');
+const modalAccumulate = document.querySelector('.modal-option-accumulate');
+const modalConfirm = document.getElementById('modal-confirm');
+const modalCancel = document.getElementById('modal-cancel');
+const modalDontAsk = document.getElementById('modal-dont-ask');
+
+let scanDecisionResolve = null;
+let selectedScanAction = null;
+
+function getScanModePreference() {
+  return localStorage.getItem('sgva-scan-mode') || 'ask';
+}
+
+function setScanModePreference(mode) {
+  localStorage.setItem('sgva-scan-mode', mode);
+}
+
+function showScanDecisionModal(offerCount) {
+  return new Promise((resolve) => {
+    scanDecisionResolve = resolve;
+    selectedScanAction = null;
+
+    modalSubtitle.textContent = `Tienes ${offerCount} oferta${offerCount !== 1 ? 's' : ''} guardada${offerCount !== 1 ? 's' : ''} de escaneos anteriores.`;
+
+    modalReplace.classList.remove('selected');
+    modalAccumulate.classList.remove('selected');
+    modalDontAsk.checked = false;
+    scanDecisionModal.style.display = 'flex';
+
+    modalReplace.focus();
+  });
+}
+
+function hideScanDecisionModal() {
+  scanDecisionModal.style.display = 'none';
+}
+
+modalReplace.addEventListener('click', () => {
+  modalReplace.classList.add('selected');
+  modalAccumulate.classList.remove('selected');
+  selectedScanAction = 'replace';
+});
+
+modalAccumulate.addEventListener('click', () => {
+  modalAccumulate.classList.add('selected');
+  modalReplace.classList.remove('selected');
+  selectedScanAction = 'accumulate';
+});
+
+modalCancel.addEventListener('click', () => {
+  hideScanDecisionModal();
+  if (scanDecisionResolve) {
+    scanDecisionResolve(null);
+    scanDecisionResolve = null;
+  }
+});
+
+modalConfirm.addEventListener('click', () => {
+  if (!selectedScanAction) {
+    modalReplace.classList.add('selected');
+    selectedScanAction = 'replace';
+  }
+
+  if (modalDontAsk.checked) {
+    setScanModePreference(selectedScanAction);
+  }
+
+  hideScanDecisionModal();
+  if (scanDecisionResolve) {
+    scanDecisionResolve(selectedScanAction);
+    scanDecisionResolve = null;
+  }
+});
+
+scanDecisionModal.addEventListener('click', (e) => {
+  if (e.target === scanDecisionModal) {
+    modalCancel.click();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && scanDecisionModal.style.display === 'flex') {
+    modalCancel.click();
+  }
+});
+
+// ===== Limpiar BD manual (Settings) =====
+const btnClearDb = document.getElementById('btn-clear-db');
+if (btnClearDb) {
+  btnClearDb.addEventListener('click', async () => {
+    try {
+      await window.api.clearDatabase();
+      currentOffers = [];
+      renderResults(currentOffers);
+      updateOfferCount(0);
+      addLog('Base de datos limpiada.');
+    } catch (e) {
+      console.error('Error al limpiar la base de datos:', e);
+    }
+  });
+}
 let currentOffers = [];
 
 async function loadSavedOffers() {

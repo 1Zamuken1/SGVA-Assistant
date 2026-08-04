@@ -308,6 +308,10 @@
                 <div class="custom-option" data-value="markdown"><i class="ph ph-file-text"></i> Exportar a Markdown</div>
               </div>
             </div>
+            <button type="button" class="btn btn-outline" id="btn-clear-results" title="Limpiar todos los datos guardados">
+              <i class="ph ph-trash"></i>
+              Limpiar
+            </button>
           </div>
         </div>
 
@@ -503,6 +507,23 @@
               </div>
             </div>
 
+            <!-- Sección: Datos -->
+            <div class="settings-section glass-card">
+              <div class="settings-section-header">
+                <div class="section-icon icon-red"><i class="ph ph-database"></i></div>
+                <div>
+                  <h3>Datos Locales</h3>
+                  <p class="text-muted">Gestiona la base de datos de ofertas guardadas</p>
+                </div>
+              </div>
+              <div class="settings-section-actions">
+                <button type="button" class="btn btn-danger" id="btn-clear-db">
+                  <i class="ph ph-trash"></i>
+                  Limpiar Base de Datos
+                </button>
+              </div>
+            </div>
+
             <button type="submit" form="settings-form" class="btn btn-primary btn-save">
               <i class="ph ph-floppy-disk"></i>
               Guardar Configuración
@@ -550,6 +571,49 @@
           </div>
         </div>
       </section>
+
+    <!-- Modal: Decisión de escaneo -->
+      <div class="modal-overlay" id="scan-decision-modal" style="display:none">
+        <div class="modal-card glass-card">
+          <div class="modal-header">
+            <div class="modal-icon-wrap icon-blue">
+              <i class="ph-fill ph-shuffle"></i>
+            </div>
+            <h3>¿Qué hacer con los datos guardados?</h3>
+            <p class="text-muted" id="modal-subtitle">Tienes ofertas de escaneos anteriores almacenadas.</p>
+          </div>
+          <div class="modal-options">
+            <button class="modal-option modal-option-replace" data-action="replace">
+              <div class="modal-option-icon">
+                <i class="ph-fill ph-trash"></i>
+              </div>
+              <div class="modal-option-content">
+                <strong>Escanear y reemplazar</strong>
+                <p>Borra los datos anteriores y guarda solo los nuevos resultados.</p>
+              </div>
+            </button>
+            <button class="modal-option modal-option-accumulate" data-action="accumulate">
+              <div class="modal-option-icon">
+                <i class="ph-fill ph-plus-circle"></i>
+              </div>
+              <div class="modal-option-content">
+                <strong>Escanear y acumular</strong>
+                <p>Agrega los nuevos resultados a los que ya tenías guardados.</p>
+              </div>
+            </button>
+          </div>
+          <div class="modal-footer">
+            <label class="modal-dont-ask">
+              <input type="checkbox" id="modal-dont-ask">
+              <span>No volver a preguntar</span>
+            </label>
+            <div class="modal-actions">
+              <button class="btn btn-outline" id="modal-cancel">Cancelar</button>
+              <button class="btn btn-primary" id="modal-confirm">Confirmar</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
     </main>
   </div>

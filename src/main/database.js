@@ -63,6 +63,11 @@ class Database {
     }
   }
 
+  limpiarBaseDeDatos() {
+    this.ofertasGuardadas = {};
+    this.guardarEnDisco();
+  }
+
   obtenerTodas() {
     return Object.values(this.ofertasGuardadas);
   }

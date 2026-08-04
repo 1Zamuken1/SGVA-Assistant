@@ -7,6 +7,9 @@ contextBridge.exposeInMainWorld('api', {
   // Función para cargar las ofertas guardadas de la base de datos
   getSavedOffers: () => ipcRenderer.invoke('get-saved-offers'),
 
+  // Función para limpiar la base de datos
+  clearDatabase: () => ipcRenderer.invoke('clear-database'),
+
   // Exportación
   exportData: (data, format) => ipcRenderer.invoke('export-data', data, format),
 
