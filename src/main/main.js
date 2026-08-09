@@ -1,5 +1,11 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+
+// En producción, Playwright debe usar el Chromium empaquetado en resources/
+if (app.isPackaged) {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = path.join(process.resourcesPath, 'playwright-browsers');
+}
+
 const dotenv = require('dotenv');
 const fs = require('fs');
 const ExcelJS = require('exceljs');

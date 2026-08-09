@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const fs = require('fs');
 const path = require('path');
 const { estructurarOferta } = require('./ai_evaluator');
 const database = require('./database');
@@ -26,6 +27,12 @@ async function startScraping(config, logCallback, stepCallback) {
   
   step('browser');
   log('Iniciando navegador Playwright (Chromium)...');
+  
+  // Verificar que el ejecutable de Chromium exista antes de lanzarlo
+  const chromiumExecutable = chromium.executablePath();
+  if (!fs.existsSync(chromiumExecutable)) {
+    throw new Error(`No se encontró el motor Chromium necesario para la aplicación. Ejecute "npx playwright install chromium" en la carpeta del proyecto, o reinstale la aplicación si el problema persiste. Ruta esperada: ${chromiumExecutable}`);
+  }
   
   const browserContext = await chromium.launchPersistentContext(userDataDir, {
     headless: false,

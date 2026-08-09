@@ -13,6 +13,9 @@ ofertas_db.json
 # Carpeta de distribución generada por electron-builder
 dist/
 
+# Navegador Chromium empaquetado para la app (generado por browsers:prepare)
+browsers/
+
 # Archivos de caché y build temporales
 build/
 *.spec
