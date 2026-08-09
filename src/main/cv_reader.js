@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const pdfParse = require('pdf-parse');
+const { PDFParse } = require('pdf-parse');
 const mammoth = require('mammoth');
 
 const EXTENSIONES_VALIDAS = ['.pdf', '.docx', '.txt', '.md', '.rtf'];
@@ -49,8 +49,9 @@ async function leerArchivoCV(filePath) {
   let texto;
   if (extension === '.pdf') {
     const buffer = fs.readFileSync(filePath);
-    const data = await pdfParse(buffer);
-    texto = data.text || '';
+    const parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
+    texto = result?.text || '';
   } else if (extension === '.docx') {
     const result = await mammoth.extractRawText({ path: filePath });
     texto = result.value || '';
