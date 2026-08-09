@@ -4,12 +4,14 @@ const crypto = require('crypto');
 
 class Database {
   constructor() {
-    this.dbPath = path.join(
+    this.appDir = path.join(
       process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + '/Library/Application Support' : process.env.HOME + "/.config"),
-      'sgva-assistant',
-      'ofertas_db.json'
+      'sgva-assistant'
     );
+    this.dbPath = path.join(this.appDir, 'ofertas_db.json');
+    this.cvPath = path.join(this.appDir, 'cv_perfil.json');
     this.ofertasGuardadas = {}; // hash -> ofertaEstructurada
+    this.cvPerfil = null;
     this.inicializar();
   }
 
@@ -25,6 +27,7 @@ class Database {
       console.error('Error inicializando base de datos local:', e);
       this.ofertasGuardadas = {};
     }
+    this.cargarCV();
   }
 
   guardarEnDisco() {
@@ -37,6 +40,47 @@ class Database {
     } catch (e) {
       console.error('Error guardando en base de datos local:', e);
     }
+  }
+
+  // ===== Perfil CV =====
+  cargarCV() {
+    try {
+      if (fs.existsSync(this.cvPath)) {
+        this.cvPerfil = JSON.parse(fs.readFileSync(this.cvPath, 'utf8'));
+      }
+    } catch (e) {
+      console.error('Error cargando perfil CV:', e);
+      this.cvPerfil = null;
+    }
+  }
+
+  guardarPerfilCV(perfil) {
+    this.cvPerfil = perfil;
+    try {
+      if (!fs.existsSync(this.appDir)) {
+        fs.mkdirSync(this.appDir, { recursive: true });
+      }
+      fs.writeFileSync(this.cvPath, JSON.stringify(perfil, null, 2), 'utf8');
+    } catch (e) {
+      console.error('Error guardando perfil CV:', e);
+    }
+  }
+
+  obtenerPerfilCV() {
+    return this.cvPerfil;
+  }
+
+  // ===== Prioridades de ofertas =====
+  // Recibe un mapa hash -> { prioridad, puntaje, motivo }
+  actualizarPrioridades(prioridades) {
+    for (const [hash, info] of Object.entries(prioridades || {})) {
+      if (this.ofertasGuardadas[hash]) {
+        this.ofertasGuardadas[hash].prioridad = info.prioridad || 'baja';
+        this.ofertasGuardadas[hash].puntaje = Number(info.puntaje) || 0;
+        this.ofertasGuardadas[hash].motivo = info.motivo || '';
+      }
+    }
+    this.guardarEnDisco();
   }
 
   generarHash(textoRaw) {
@@ -70,6 +114,10 @@ class Database {
 
   obtenerTodas() {
     return Object.values(this.ofertasGuardadas);
+  }
+
+  obtenerTodasConHash() {
+    return Object.entries(this.ofertasGuardadas).map(([hash, oferta]) => ({ hash, oferta }));
   }
 }
 

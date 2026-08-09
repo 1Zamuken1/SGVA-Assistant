@@ -46,6 +46,10 @@
           <span class="nav-label">Ofertas</span>
           <span class="badge" id="offers-badge" style="display:none">0</span>
         </button>
+        <button class="nav-item" data-target="ai">
+          <span class="nav-icon"><i class="ph ph-sparkle"></i></span>
+          <span class="nav-label">IA</span>
+        </button>
         <button class="nav-item" data-target="settings">
           <span class="nav-icon"><i class="ph ph-sliders-horizontal"></i></span>
           <span class="nav-label">Configuración</span>
@@ -324,6 +328,12 @@
               <i class="ph ph-x"></i>
             </div>
           </div>
+          <div class="priority-filters" id="priority-filters" style="display:none">
+            <button class="priority-filter-chip active" data-pri="todas">Todas</button>
+            <button class="priority-filter-chip chip-alta" data-pri="alta">Alta</button>
+            <button class="priority-filter-chip chip-media" data-pri="media">Media</button>
+            <button class="priority-filter-chip chip-baja" data-pri="baja">Baja</button>
+          </div>
         </div>
 
         <div id="results-container" class="results-grid">
@@ -337,6 +347,136 @@
               <i class="ph ph-robot"></i>
               Ir al Extractor
             </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================== IA ======================== -->
+      <section id="ai" class="view">
+        <div class="page-header">
+          <div class="page-title-group">
+            <p class="page-eyebrow">Inteligencia Artificial</p>
+            <h2>Asistente de Postulación</h2>
+            <p class="page-subtitle">Sube tu CV, deja que la IA clasifique las ofertas por compatibilidad y genera correos personalizados.</p>
+          </div>
+        </div>
+
+        <div class="ai-layout">
+
+          <!-- Columna izquierda: CV -->
+          <div class="ai-main">
+            <div class="settings-section glass-card">
+              <div class="settings-section-header">
+                <div class="section-icon icon-purple"><i class="ph ph-file"></i></div>
+                <div>
+                  <h3>1 · Tu CV</h3>
+                  <p class="text-muted">Carga tu currículum (PDF, DOCX, TXT o pega el texto). Se recomienda formato ATS.</p>
+                </div>
+              </div>
+
+              <div class="cv-dropzone" id="cv-dropzone">
+                <input type="file" id="cv-file-input" accept=".pdf,.docx,.txt,.md" style="display:none">
+                <div class="cv-dropzone-icon"><i class="ph-fill ph-cloud-arrow-up"></i></div>
+                <strong id="cv-dropzone-title">Arrastra tu CV aquí o haz clic</strong>
+                <p class="text-muted">PDF · DOCX · TXT · MD — recomendado formato ATS</p>
+              </div>
+
+              <div class="cv-paste-toggle" id="cv-paste-toggle">
+                <i class="ph ph-text-aa"></i>
+                <span>O pega el texto de tu CV</span>
+              </div>
+
+              <div class="cv-textarea-wrap" id="cv-textarea-wrap" style="display:none">
+                <textarea id="cv-pasted-text" class="cv-textarea" placeholder="Pega aquí el contenido de tu CV..."></textarea>
+              </div>
+
+              <div class="cv-actions">
+                <button type="button" class="btn btn-outline" id="btn-sanitize-cv" disabled>
+                  <i class="ph ph-sparkle"></i>
+                  Ordenar con IA
+                </button>
+                <button type="button" class="btn btn-primary" id="btn-extract-profile" disabled>
+                  <i class="ph ph-scan"></i>
+                  Extraer Perfil
+                </button>
+              </div>
+              <div class="cv-quality-warning" id="cv-quality-warning" style="display:none">
+                <i class="ph-fill ph-warning"></i>
+                <span></span>
+              </div>
+            </div>
+
+            <!-- Resultado: CV limpio -->
+            <div class="settings-section glass-card" id="cv-clean-section" style="display:none">
+              <div class="settings-section-header">
+                <div class="section-icon icon-green"><i class="ph ph-text-aa"></i></div>
+                <div>
+                  <h3>CV Ordenado</h3>
+                  <p class="text-muted">Texto reconstruido por la IA. Puedes editarlo antes de extraer el perfil.</p>
+                </div>
+              </div>
+              <textarea id="cv-clean-text" class="cv-textarea cv-textarea-tall"></textarea>
+              <div class="cv-actions">
+                <button type="button" class="btn btn-primary" id="btn-extract-profile-2">
+                  <i class="ph ph-scan"></i>
+                  Extraer Perfil
+                </button>
+              </div>
+            </div>
+
+            <!-- Resultado: Perfil extraído -->
+            <div class="settings-section glass-card" id="cv-profile-section" style="display:none">
+              <div class="settings-section-header">
+                <div class="section-icon icon-blue"><i class="ph ph-identification-card"></i></div>
+                <div>
+                  <h3>2 · Perfil Detectado</h3>
+                  <p class="text-muted">Revisa y edita los datos extraídos de tu CV.</p>
+                </div>
+              </div>
+              <div id="cv-profile-content"></div>
+            </div>
+
+            <!-- Clasificación -->
+            <div class="settings-section glass-card">
+              <div class="settings-section-header">
+                <div class="section-icon icon-orange"><i class="ph ph-funnel"></i></div>
+                <div>
+                  <h3>3 · Clasificar Ofertas</h3>
+                  <p class="text-muted">La IA comparará tu perfil con las ofertas guardadas y asignará prioridad y puntaje.</p>
+                </div>
+              </div>
+              <div class="cv-actions">
+                <button type="button" class="btn btn-primary" id="btn-rank-offers" disabled>
+                  <i class="ph ph-ranking"></i>
+                  Clasificar Todas las Ofertas
+                </button>
+              </div>
+              <div class="rank-summary" id="rank-summary" style="display:none">
+                <div class="rank-stat rank-high"><span id="rank-high-num">0</span><small>Alta</small></div>
+                <div class="rank-stat rank-med"><span id="rank-med-num">0</span><small>Media</small></div>
+                <div class="rank-stat rank-low"><span id="rank-low-num">0</span><small>Baja</small></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Columna derecha: Log IA -->
+          <div class="ai-sidebar">
+            <div class="help-card glass-card">
+              <div class="help-card-header">
+                <i class="ph-fill ph-terminal"></i>
+                <h3>Progreso de la IA</h3>
+              </div>
+              <div class="ia-log-box" id="ia-log-box">
+                <p class="text-muted">Esperando actividad...</p>
+              </div>
+            </div>
+            <div class="tip-card">
+              <i class="ph-fill ph-lightbulb"></i>
+              <div>
+                <strong>Consejo</strong>
+                <p>Si tu CV tiene un diseño con columnas o cajas, pulsa "Ordenar con IA" antes de extraer el perfil para mejorar la lectura.</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -610,6 +750,63 @@
             <div class="modal-actions">
               <button class="btn btn-outline" id="modal-cancel">Cancelar</button>
               <button class="btn btn-primary" id="modal-confirm">Confirmar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal: Generar Correo -->
+      <div class="modal-overlay" id="email-modal" style="display:none">
+        <div class="modal-card glass-card email-modal-card">
+          <div class="modal-header">
+            <div class="modal-icon-wrap icon-green">
+              <i class="ph-fill ph-envelope-simple"></i>
+            </div>
+            <h3>Correo de Postulación</h3>
+            <p class="text-muted" id="email-modal-empresa">Generando correo...</p>
+          </div>
+
+          <div class="email-style-selector">
+            <button class="email-style-option" data-estilo="formal">
+              <i class="ph ph-buildings"></i>
+              <span>Formal</span>
+            </button>
+            <button class="email-style-option" data-estilo="detallado">
+              <i class="ph ph-list-magnifying-glass"></i>
+              <span>Detallado</span>
+            </button>
+            <button class="email-style-option" data-estilo="breve">
+              <i class="ph ph-lightning"></i>
+              <span>Breve</span>
+            </button>
+          </div>
+
+          <div class="email-progress" id="email-progress" style="display:none">
+            <div class="spin-ring small"></div>
+            <span>Generando con IA (70B)...</span>
+          </div>
+
+          <div class="email-result" id="email-result" style="display:none">
+            <div class="email-field">
+              <label class="field-label">Asunto</label>
+              <div class="field-input">
+                <i class="ph ph-envelope field-icon"></i>
+                <input type="text" id="email-asunto">
+              </div>
+            </div>
+            <div class="email-field">
+              <label class="field-label">Cuerpo</label>
+              <textarea id="email-cuerpo" class="cv-textarea email-cuerpo-textarea"></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <div class="modal-actions">
+              <button class="btn btn-outline" id="email-modal-cancel">Cerrar</button>
+              <button class="btn btn-primary" id="email-copy" style="display:none">
+                <i class="ph ph-copy"></i>
+                Copiar Correo
+              </button>
             </div>
           </div>
         </div>

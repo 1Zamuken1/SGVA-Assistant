@@ -9,7 +9,10 @@ if (app.isPackaged) {
 const dotenv = require('dotenv');
 const fs = require('fs');
 const ExcelJS = require('exceljs');
+const { clipboard } = require('electron');
 const { startScraping } = require('./scraper');
+const { sanitizarCV, extraerPerfilCV, clasificarOfertas, generarCorreoConIA, setLogFn } = require('./ai_evaluator');
+const { leerArchivoCV } = require('./cv_reader');
 
 // Cargar variables de entorno (por si hay .env)
 dotenv.config();
@@ -156,6 +159,163 @@ ipcMain.handle('export-data', async (event, data, format) => {
     }
   } catch (error) {
     console.error('Error al exportar:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// ==== IA: gestionar CV, perfil, prioridades y correos ====
+
+const sendIalog = (msg) => {
+  if (mainWindow) mainWindow.webContents.send('ia-log', msg);
+};
+
+// Importar aquí para no romper la carga si hay dependencias locales
+const { detectarCalidadCV } = require('./cv_reader');
+
+const validarGroqKey = (key) => {
+  if (!key) return 'No hay API Key de Groq configurada. Ve a Configuración.';
+  return null;
+};
+
+ipcMain.handle('import-cv', async (event, { textoPegado }) => {
+  try {
+    // Si el usuario pegó texto, usarlo directo
+    if (textoPegado && String(textoPegado).trim().length > 50) {
+      const texto = String(textoPegado).replace(/\r\n/g, '\n').trim();
+      return { success: true, resultado: { nombreArchivo: 'Texto pegado', texto, calidad: detectarCalidadCV(texto) } };
+    }
+
+    // Si no, pedir archivo
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: 'Selecciona tu CV',
+      properties: ['openFile'],
+      filters: [
+        { name: 'CV (PDF, DOCX, TXT, MD)', extensions: ['pdf', 'docx', 'txt', 'md'] }
+      ]
+    });
+
+    if (canceled || filePaths.length === 0) return { success: false, cancelado: true };
+
+    const resultado = await leerArchivoCV(filePaths[0]);
+    return { success: true, resultado };
+  } catch (error) {
+    console.error('Error importando CV:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('sanitize-cv', async (event, { textoCrudo, groqApiKey }) => {
+  const validationError = validarGroqKey(groqApiKey);
+  if (validationError) return { success: false, error: validationError };
+  if (!textoCrudo) return { success: false, error: 'No hay texto de CV para procesar.' };
+  if (String(textoCrudo).trim().length < 50) return { success: false, error: 'El texto del CV es demasiado corto para procesar.' };
+
+  try {
+    sendIalog('Reconstruyendo el CV con IA (ordenando secciones)...');
+    const textoLimpio = await sanitizarCV(String(textoCrudo), groqApiKey);
+    if (!textoLimpio) return { success: false, error: 'Groq no devolvió una respuesta válida.' };
+    sendIalog('CV reconstruido correctamente.');
+    return { success: true, textoLimpio };
+  } catch (error) {
+    console.error('Error sanitizando CV:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('extract-cv-profile', async (event, { textoCv, groqApiKey }) => {
+  const validationError = validarGroqKey(groqApiKey);
+  if (validationError) return { success: false, error: validationError };
+  if (!textoCv || String(textoCv).trim().length < 50) return { success: false, error: 'Primero carga tu CV para extraer el perfil.' };
+
+  try {
+    sendIalog('Extrayendo perfil profesional desde el CV...');
+    const perfil = await extraerPerfilCV(String(textoCv), groqApiKey);
+    if (!perfil) return { success: false, error: 'Groq no pudo extraer el perfil.' };
+    database.guardarPerfilCV(perfil);
+    sendIalog('Perfil extraído y guardado.');
+    return { success: true, perfil };
+  } catch (error) {
+    console.error('Error extrayendo perfil CV:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-cv-profile', async () => {
+  return { success: true, perfil: database.obtenerPerfilCV() };
+});
+
+ipcMain.handle('rank-offers', async (event, { groqApiKey }) => {
+  const validationError = validarGroqKey(groqApiKey);
+  if (validationError) return { success: false, error: validationError };
+
+  const perfil = database.obtenerPerfilCV();
+  if (!perfil) return { success: false, error: 'Primero debes extraer tu perfil desde el CV.' };
+
+  const conHash = database.obtenerTodasConHash();
+  if (conHash.length === 0) return { success: false, error: 'No hay ofertas guardadas para clasificar. Ejecuta primero el extractor.' };
+
+  try {
+    setLogFn((msg) => sendIalog(msg));
+    const ofertas = conHash.map(({ oferta }) => oferta);
+    sendIalog(`Clasificando ${ofertas.length} ofertas contra tu perfil...`);
+    const resultados = await clasificarOfertas(perfil, ofertas, groqApiKey);
+
+    // Mapear resultados por hash
+    const prioridades = {};
+    conHash.forEach(({ hash }, i) => {
+      prioridades[hash] = {
+        prioridad: resultados[i]?.prioridad || 'baja',
+        puntaje: resultados[i]?.puntaje || 0,
+        motivo: resultados[i]?.motivo || ''
+      };
+    });
+    database.actualizarPrioridades(prioridades);
+
+    const conteo = resultados.reduce((acc, r) => {
+      acc[r.prioridad] = (acc[r.prioridad] || 0) + 1;
+      return acc;
+    }, {});
+    sendIalog(`Clasificación completa: ${conteo.alta || 0} alta, ${conteo.media || 0} media, ${conteo.baja || 0} baja.`);
+
+    return { success: true, resultados };
+  } catch (error) {
+    console.error('Error clasificando ofertas:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('generate-email', async (event, { empresa, estilo, groqApiKey }) => {
+  const validationError = validarGroqKey(groqApiKey);
+  if (validationError) return { success: false, error: validationError };
+
+  const perfil = database.obtenerPerfilCV();
+  if (!perfil) return { success: false, error: 'Primero debes extraer tu perfil desde el CV para personalizar el correo.' };
+
+  const estiloValido = ['formal', 'detallado', 'breve'].includes(estilo) ? estilo : 'formal';
+
+  try {
+    // Buscar la oferta por nombre de empresa
+    const todas = database.obtenerTodas();
+    let oferta = todas.find(o => (o.Empresa || 'no especificada').toLowerCase() === String(empresa || '').toLowerCase());
+    if (!oferta) {
+      oferta = { Empresa: empresa || 'la empresa', Contacto: null, Funciones: [] };
+    }
+
+    sendIalog(`Generando correo para ${oferta.Empresa} (estilo: ${estiloValido})...`);
+    const correo = await generarCorreoConIA(oferta, perfil, estiloValido, groqApiKey);
+    if (!correo) return { success: false, error: 'Groq no pudo generar el correo.' };
+    return { success: true, correo };
+  } catch (error) {
+    console.error('Error generando correo:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('copy-to-clipboard', async (event, { texto }) => {
+  try {
+    clipboard.writeText(String(texto || ''));
+    return { success: true };
+  } catch (error) {
     return { success: false, error: error.message };
   }
 });

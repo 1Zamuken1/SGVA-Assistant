@@ -13,6 +13,20 @@ contextBridge.exposeInMainWorld('api', {
   // Exportación
   exportData: (data, format) => ipcRenderer.invoke('export-data', data, format),
 
+  // ==== IA: CV, perfil, prioridades y correos ====
+  importCv: (options) => ipcRenderer.invoke('import-cv', options),
+  sanitizeCv: (options) => ipcRenderer.invoke('sanitize-cv', options),
+  extractCvProfile: (options) => ipcRenderer.invoke('extract-cv-profile', options),
+  getCvProfile: () => ipcRenderer.invoke('get-cv-profile'),
+  rankOffers: (options) => ipcRenderer.invoke('rank-offers', options),
+  generateEmail: (options) => ipcRenderer.invoke('generate-email', options),
+  copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', { texto: text }),
+
+  // Escuchar logs del proceso IA
+  onIalog: (callback) => {
+    ipcRenderer.on('ia-log', (event, message) => callback(message));
+  },
+
   // Escuchar mensajes de progreso del scraper (log técnico)
   onScraperLog: (callback) => {
     ipcRenderer.on('scraper-log', (event, message) => callback(message));
@@ -27,5 +41,6 @@ contextBridge.exposeInMainWorld('api', {
   removeAllScraperListeners: () => {
     ipcRenderer.removeAllListeners('scraper-log');
     ipcRenderer.removeAllListeners('scraper-step');
+    ipcRenderer.removeAllListeners('ia-log');
   }
 });

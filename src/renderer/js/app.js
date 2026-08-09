@@ -310,6 +310,13 @@ function addLog(msg) {
 const offersBadge = document.getElementById('offers-badge');
 const statTotalNum = document.getElementById('stat-total-num');
 
+const PRIORIDAD_CLASS = { alta: 'pri-alta', media: 'pri-media', baja: 'pri-baja' };
+const PRIORIDAD_LABEL = { alta: 'Alta', media: 'Media', baja: 'Baja' };
+
+function prioridadDe(oferta) {
+  return (oferta && oferta.prioridad && PRIORIDAD_CLASS[oferta.prioridad]) ? oferta.prioridad : 'baja';
+}
+
 function updateOfferCount(count) {
   if (offersBadge) {
     offersBadge.style.display = count > 0 ? '' : 'none';
@@ -345,6 +352,15 @@ function renderResults(ofertas) {
     const fechaInicio = of.FechaInicio || null;
     const fechaFin = of.FechaLimite || of.FechaFin || null;
 
+    const pri = prioridadDe(of);
+    const puntaje = of.puntaje || 0;
+    const prioridadHtml = `
+      <div class="prioridad-badge ${PRIORIDAD_CLASS[pri]}" title="${of.motivo || ''}">
+        <i class="ph-fill ph-flag"></i>
+        <span>${PRIORIDAD_LABEL[pri]}</span>
+        ${puntaje > 0 ? `<span class="puntaje-pill">${puntaje}%</span>` : ''}
+      </div>`;
+
     const datesHtml = (fechaInicio || fechaFin) ? `
       <div class="oferta-dates">
         ${fechaInicio ? `<div class="date-pill"><i class="ph ph-calendar-check"></i>${fechaInicio}</div>` : ''}
@@ -356,6 +372,7 @@ function renderResults(ofertas) {
         <div class="empresa-name">${of.Empresa || 'Empresa No Especificada'}</div>
         <div class="empresa-badge"><i class="ph-fill ph-buildings"></i></div>
       </div>
+      ${prioridadHtml}
       <div class="oferta-card-body">
         <div class="oferta-meta">
           <div class="meta-row">
@@ -370,8 +387,19 @@ function renderResults(ofertas) {
         </div>` : ''}
         ${datesHtml}
       </div>
+      <div class="oferta-card-footer">
+        <button class="btn btn-outline btn-correo" data-empresa="${(of.Empresa || '').replace(/"/g, '&quot;')}" title="Generar correo de postulación con IA">
+          <i class="ph ph-envelope-simple"></i>
+          Generar Correo
+        </button>
+      </div>
     `;
     resultsContainer.appendChild(card);
+  });
+
+  // Vincular botones de correo
+  resultsContainer.querySelectorAll('.btn-correo').forEach(btn => {
+    btn.addEventListener('click', () => openEmailModal(btn.dataset.empresa));
   });
 }
 
@@ -592,6 +620,7 @@ async function loadSavedOffers() {
   try {
     const saved = await window.api.getSavedOffers();
     currentOffers = saved || [];
+    refreshPriorityFilters();
     renderResults(currentOffers);
   } catch (e) {
     console.error('No se pudieron cargar ofertas guardadas:', e);
@@ -602,27 +631,56 @@ loadSavedOffers();
 
 const searchInput = document.getElementById('search-ofertas');
 const searchClear = document.getElementById('search-clear');
+const priorityFilters = document.getElementById('priority-filters');
 
-searchInput.addEventListener('input', (e) => {
-  const term = e.target.value.toLowerCase();
-  searchClear.style.display = term ? '' : 'none';
+let currentPriorityFilter = 'todas';
 
-  if (!term) { renderResults(currentOffers); return; }
+function getFilteredOffers() {
+  const term = searchInput.value.toLowerCase();
+  let filtered = currentOffers;
 
-  const filtered = currentOffers.filter(of => {
+  if (currentPriorityFilter !== 'todas') {
+    filtered = filtered.filter(of => prioridadDe(of) === currentPriorityFilter);
+  }
+
+  if (!term) return filtered;
+
+  return filtered.filter(of => {
     const empresa = (of.Empresa || '').toLowerCase();
     const contacto = (of.Contacto || '').toLowerCase();
     const funciones = (of.Funciones || []).join(' ').toLowerCase();
     return empresa.includes(term) || contacto.includes(term) || funciones.includes(term);
   });
-  renderResults(filtered);
+}
+
+function refreshPriorityFilters() {
+  if (!priorityFilters) return;
+  const hasPrioridad = currentOffers.some(of => of.prioridad);
+  priorityFilters.style.display = hasPrioridad ? '' : 'none';
+}
+
+searchInput.addEventListener('input', (e) => {
+  const term = e.target.value.toLowerCase();
+  searchClear.style.display = term ? '' : 'none';
+  renderResults(getFilteredOffers());
 });
 
 searchClear.addEventListener('click', () => {
   searchInput.value = '';
   searchClear.style.display = 'none';
-  renderResults(currentOffers);
+  renderResults(getFilteredOffers());
 });
+
+if (priorityFilters) {
+  priorityFilters.querySelectorAll('.priority-filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      currentPriorityFilter = chip.dataset.pri;
+      priorityFilters.querySelectorAll('.priority-filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      renderResults(getFilteredOffers());
+    });
+  });
+}
 
 // ===== Exportar =====
 const wrapperExport = document.getElementById('wrapper-export');
@@ -675,3 +733,373 @@ if (wrapperExport && triggerExport && optionsExport) {
     });
   });
 }
+
+// ===== Vista IA: CV, perfil, clasificación y correos =====
+const cvDropzone = document.getElementById('cv-dropzone');
+const cvFileInput = document.getElementById('cv-file-input');
+const cvPasteToggle = document.getElementById('cv-paste-toggle');
+const cvTextareaWrap = document.getElementById('cv-textarea-wrap');
+const cvPastedText = document.getElementById('cv-pasted-text');
+const btnSanitizeCv = document.getElementById('btn-sanitize-cv');
+const btnExtractProfile = document.getElementById('btn-extract-profile');
+const btnExtractProfile2 = document.getElementById('btn-extract-profile-2');
+const cvCleanSection = document.getElementById('cv-clean-section');
+const cvCleanText = document.getElementById('cv-clean-text');
+const cvProfileSection = document.getElementById('cv-profile-section');
+const cvProfileContent = document.getElementById('cv-profile-content');
+const cvQualityWarning = document.getElementById('cv-quality-warning');
+const btnRankOffers = document.getElementById('btn-rank-offers');
+const rankSummary = document.getElementById('rank-summary');
+const iaLogBox = document.getElementById('ia-log-box');
+
+let cvActual = ''; // texto crudo o pegado
+let cvNombreArchivo = '';
+
+function cvGroqKey() {
+  return localStorage.getItem('groq-key') || '';
+}
+
+function iaLog(msg) {
+  if (!iaLogBox) return;
+  if (iaLogBox.dataset.empty === undefined && iaLogBox.children.length === 1) {
+    iaLogBox.innerHTML = '';
+  }
+  iaLogBox.dataset.empty = '0';
+  const line = document.createElement('div');
+  line.className = 'ia-log-line';
+  line.textContent = msg;
+  iaLogBox.appendChild(line);
+  iaLogBox.scrollTop = iaLogBox.scrollHeight;
+}
+
+function addQualityWarning(motivo) {
+  if (cvQualityWarning) {
+    cvQualityWarning.querySelector('span').textContent = motivo;
+    cvQualityWarning.style.display = 'flex';
+  }
+}
+
+function setCvButtonsEnabled(enabled) {
+  if (btnSanitizeCv) btnSanitizeCv.disabled = !enabled;
+  if (btnExtractProfile) btnExtractProfile.disabled = !enabled;
+}
+
+// Dropzone: usa el diálogo nativo del main process (más confiable en Electron)
+async function importarCvDesdeDialogo() {
+  const res = await window.api.importCv({ textoPegado: null });
+  if (res && res.success && res.resultado) {
+    onCvLoaded(res.resultado);
+  } else if (res && !res.cancelado) {
+    alert('Error al leer el CV: ' + (res.error || 'Desconocido'));
+  }
+}
+
+if (cvDropzone) {
+  cvDropzone.addEventListener('click', importarCvDesdeDialogo);
+  cvDropzone.addEventListener('dragover', (e) => { e.preventDefault(); cvDropzone.classList.add('dragging'); });
+  cvDropzone.addEventListener('dragleave', () => cvDropzone.classList.remove('dragging'));
+  cvDropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    cvDropzone.classList.remove('dragging');
+    importarCvDesdeDialogo();
+  });
+}
+
+if (cvFileInput) {
+  cvFileInput.addEventListener('change', () => {
+    if (cvFileInput.files.length > 0) importarCvDesdeDialogo();
+  });
+}
+
+function onCvLoaded(resultado) {
+  cvActual = resultado.texto;
+  cvNombreArchivo = resultado.nombreArchivo || 'CV';
+  const dropzoneTitle = document.getElementById('cv-dropzone-title');
+  if (dropzoneTitle) dropzoneTitle.textContent = cvNombreArchivo;
+
+  if (resultado.calidad && !resultado.calidad.ok) {
+    addQualityWarning(resultado.calidad.motivo + ' Puedes usar "Ordenar con IA".');
+  } else if (cvQualityWarning) {
+    cvQualityWarning.style.display = 'none';
+  }
+
+  setCvButtonsEnabled(true);
+  cvCleanSection.style.display = 'none';
+  cvProfileSection.style.display = 'none';
+  iaLog(`CV cargado (${cvActual.length} caracteres).`);
+}
+
+if (cvPasteToggle) {
+  cvPasteToggle.addEventListener('click', () => {
+    const isVisible = cvTextareaWrap.style.display !== 'none';
+    cvTextareaWrap.style.display = isVisible ? 'none' : '';
+    if (isVisible) return;
+    cvPastedText.focus();
+  });
+}
+
+// Usar texto pegado
+if (cvPastedText) {
+  cvPastedText.addEventListener('input', () => {
+    const txt = cvPastedText.value.trim();
+    if (txt.length >= 50) {
+      cvActual = txt;
+      cvNombreArchivo = 'Texto pegado';
+      setCvButtonsEnabled(true);
+      cvQualityWarning.style.display = 'none';
+      cvCleanSection.style.display = 'none';
+    } else {
+      setCvButtonsEnabled(false);
+    }
+  });
+}
+
+// Ordenar con IA
+if (btnSanitizeCv) {
+  btnSanitizeCv.addEventListener('click', async () => {
+    const key = cvGroqKey();
+    if (!key) { alert('Configura tu API Key de Groq en Configuración.'); return; }
+    btnSanitizeCv.disabled = true;
+    iaLog('Ordenando CV con IA (8b)...');
+    try {
+      const res = await window.api.sanitizeCv({ textoCrudo: cvActual, groqApiKey: key });
+      if (res && res.success) {
+        cvCleanSection.style.display = '';
+        cvCleanText.value = res.textoLimpio;
+        btnExtractProfile2.disabled = false;
+        iaLog('CV ordenado correctamente.');
+      } else {
+        alert(res && res.error ? res.error : 'Error al ordenar el CV.');
+        iaLog('Error al ordenar el CV.');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      btnSanitizeCv.disabled = false;
+    }
+  });
+}
+
+// Extraer perfil (desde texto crudo)
+if (btnExtractProfile) {
+  btnExtractProfile.addEventListener('click', () => extractProfile(cvActual));
+}
+
+// Extraer perfil (desde texto limpio)
+if (btnExtractProfile2) {
+  btnExtractProfile2.addEventListener('click', () => {
+    const txt = cvCleanText.value.trim();
+    if (!txt) { alert('El texto ordenado está vacío.'); return; }
+    extractProfile(txt);
+  });
+}
+
+async function extractProfile(textoCv) {
+  const key = cvGroqKey();
+  if (!key) { alert('Configura tu API Key de Groq en Configuración.'); return; }
+  btnExtractProfile.disabled = true;
+  if (btnExtractProfile2) btnExtractProfile2.disabled = true;
+  iaLog('Extrayendo perfil profesional desde el CV...');
+  try {
+    const res = await window.api.extractCvProfile({ textoCv, groqApiKey: key });
+    if (res && res.success && res.perfil) {
+      renderPerfil(res.perfil);
+      btnRankOffers.disabled = false;
+      iaLog('Perfil extraído y guardado.');
+    } else {
+      alert(res && res.error ? res.error : 'No se pudo extraer el perfil.');
+      iaLog('Error extrayendo el perfil.');
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    btnExtractProfile.disabled = false;
+    if (btnExtractProfile2) btnExtractProfile2.disabled = false;
+  }
+}
+
+function renderPerfil(perfil) {
+  cvProfileSection.style.display = '';
+  const campos = [
+    ['Nombre', perfil.nombre],
+    ['Email', perfil.email],
+    ['Teléfono', perfil.telefono],
+    ['Ciudad', perfil.ciudad],
+    ['Carrera', perfil.carrera],
+    ['Nivel de formación', perfil.nivelFormacion],
+    ['Semestre / Etapa', perfil.semestreOEtapa],
+    ['Resumen', perfil.perfilResumen],
+    ['Habilidades', Array.isArray(perfil.habilidades) ? perfil.habilidades.join(', ') : ''],
+    ['Áreas de interés', Array.isArray(perfil.areasInteres) ? perfil.areasInteres.join(', ') : ''],
+    ['Idiomas', Array.isArray(perfil.idiomas) ? perfil.idiomas.join(', ') : ''],
+    ['Experiencia', Array.isArray(perfil.experienciaRelevante) ? perfil.experienciaRelevante.join(' · ') : '']
+  ];
+
+  cvProfileContent.innerHTML = `
+    <div class="profile-grid">
+      ${campos.filter(([, v]) => v).map(([label, value]) => `
+        <div class="profile-item">
+          <label class="field-label">${label}</label>
+          <div>${value}</div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+// Clasificar ofertas
+if (btnRankOffers) {
+  btnRankOffers.addEventListener('click', async () => {
+    const key = cvGroqKey();
+    if (!key) { alert('Configura tu API Key de Groq en Configuración.'); return; }
+    btnRankOffers.disabled = true;
+    rankSummary.style.display = 'none';
+    iaLog('Clasificando ofertas contra tu perfil...');
+    try {
+      const res = await window.api.rankOffers({ groqApiKey: key });
+      if (res && res.success) {
+        const conteo = res.resultados.reduce((acc, r) => {
+          acc[r.prioridad] = (acc[r.prioridad] || 0) + 1;
+          return acc;
+        }, {});
+        document.getElementById('rank-high-num').textContent = conteo.alta || 0;
+        document.getElementById('rank-med-num').textContent = conteo.media || 0;
+        document.getElementById('rank-low-num').textContent = conteo.baja || 0;
+        rankSummary.style.display = '';
+        iaLog(`Clasificación completa: ${conteo.alta || 0} alta, ${conteo.media || 0} media, ${conteo.baja || 0} baja.`);
+        await loadSavedOffers();
+        refreshPriorityFilters();
+        renderResults(currentOffers);
+      } else {
+        alert(res && res.error ? res.error : 'No se pudo clasificar.');
+        iaLog('Error al clasificar las ofertas.');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      btnRankOffers.disabled = false;
+    }
+  });
+}
+
+// Escuchar logs IA del main
+window.api.onIalog((msg) => iaLog(msg));
+
+// Cargar perfil guardado al iniciar
+async function loadSavedProfile() {
+  try {
+    const res = await window.api.getCvProfile();
+    if (res && res.success && res.perfil) {
+      renderPerfil(res.perfil);
+      if (btnRankOffers) btnRankOffers.disabled = false;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// ===== Modal: Generar Correo =====
+const emailModal = document.getElementById('email-modal');
+const emailModalEmpresa = document.getElementById('email-modal-empresa');
+const emailProgress = document.getElementById('email-progress');
+const emailResult = document.getElementById('email-result');
+const emailAsunto = document.getElementById('email-asunto');
+const emailCuerpo = document.getElementById('email-cuerpo');
+const emailCopy = document.getElementById('email-copy');
+const emailStyleOptions = document.querySelectorAll('.email-style-option');
+
+let emailEmpresaActual = '';
+let emailEstiloActual = 'formal';
+let emailGenerando = false;
+
+function openEmailModal(empresa) {
+  if (emailGenerando) return;
+  emailEmpresaActual = empresa;
+  emailEstiloActual = 'formal';
+  emailModalEmpresa.textContent = empresa;
+  emailModal.style.display = 'flex';
+  emailProgress.style.display = 'none';
+  emailResult.style.display = 'none';
+  emailCopy.style.display = 'none';
+
+  emailStyleOptions.forEach(opt => {
+    opt.classList.toggle('active', opt.dataset.estilo === 'formal');
+  });
+
+  generarCorreo();
+}
+
+// Abrir modal desde tarjetas de resultados hace falta
+// Nota: los botones .btn-correo se vinculan en renderResults.
+
+function generarCorreo() {
+  if (emailGenerando) return;
+  const key = cvGroqKey();
+  if (!key) { alert('Configura tu API Key de Groq en Configuración.'); return; }
+
+  emailGenerando = true;
+  emailProgress.style.display = '';
+  emailResult.style.display = 'none';
+  emailCopy.style.display = 'none';
+
+  window.api.generateEmail({ empresa: emailEmpresaActual, estilo: emailEstiloActual, groqApiKey: key })
+    .then(res => {
+      emailGenerando = false;
+      emailProgress.style.display = 'none';
+      if (res && res.success && res.correo) {
+        emailAsunto.value = res.correo.asunto || '';
+        emailCuerpo.value = res.correo.cuerpo || '';
+        emailResult.style.display = '';
+        emailCopy.style.display = '';
+      } else {
+        emailResult.style.display = '';
+        emailAsunto.value = '';
+        emailCuerpo.value = res && res.error ? res.error : 'No se pudo generar el correo.';
+        emailResult.style.display = '';
+      }
+    })
+    .catch(err => {
+      emailGenerando = false;
+      emailProgress.style.display = 'none';
+      emailResult.style.display = '';
+      emailAsunto.value = '';
+      emailCuerpo.value = 'Error: ' + (err.message || 'Desconocido');
+    });
+}
+
+if (emailModal) {
+  emailStyleOptions.forEach(opt => {
+    opt.addEventListener('click', () => {
+      emailEstiloActual = opt.dataset.estilo;
+      emailStyleOptions.forEach(o => o.classList.toggle('active', o === opt));
+      generarCorreo();
+    });
+  });
+
+  document.getElementById('email-modal-cancel').addEventListener('click', () => {
+    if (!emailGenerando) emailModal.style.display = 'none';
+  });
+
+  emailModal.addEventListener('click', (e) => {
+    if (e.target === emailModal && !emailGenerando) emailModal.style.display = 'none';
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && emailModal && emailModal.style.display === 'flex' && !emailGenerando) {
+      emailModal.style.display = 'none';
+    }
+  });
+
+  if (emailCopy) {
+    emailCopy.addEventListener('click', async () => {
+      const texto = `Asunto: ${emailAsunto.value}\n\n${emailCuerpo.value}`;
+      await window.api.copyToClipboard(texto);
+      const old = emailCopy.querySelector('span');
+      if (!old) {
+        emailCopy.innerHTML = '<i class="ph ph-check"></i> ¡Copiado!';
+        setTimeout(() => { emailCopy.innerHTML = '<i class="ph ph-copy"></i> Copiar Correo'; }, 2000);
+      }
+    });
+  }
+}
+
+loadSavedProfile();
