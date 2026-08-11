@@ -627,6 +627,40 @@
                       </button>
                     </div>
                   </div>
+                  <div class="form-field">
+                    <label class="field-label">Modelo para Clasificar</label>
+                    <div class="custom-select-wrapper" id="wrapper-modelo-rank">
+                      <div class="custom-select">
+                        <div class="custom-select-trigger" id="trigger-modelo-rank">
+                          <span>Automático (70B calidad)</span>
+                          <i class="ph ph-caret-down"></i>
+                        </div>
+                        <div class="custom-options" id="options-modelo-rank">
+                          <div class="custom-option" data-value="auto">Automático (70B calidad)</div>
+                          <div class="custom-option" data-value="70b">70B (mejor calidad)</div>
+                          <div class="custom-option" data-value="8b">8B (rápido y barato)</div>
+                        </div>
+                      </div>
+                      <input type="hidden" id="sgva-modelo-rank" value="auto">
+                    </div>
+                  </div>
+                  <div class="form-field">
+                    <label class="field-label">Modelo para Correos</label>
+                    <div class="custom-select-wrapper" id="wrapper-modelo-email">
+                      <div class="custom-select">
+                        <div class="custom-select-trigger" id="trigger-modelo-email">
+                          <span>Automático (70B calidad)</span>
+                          <i class="ph ph-caret-down"></i>
+                        </div>
+                        <div class="custom-options" id="options-modelo-email">
+                          <div class="custom-option" data-value="auto">Automático (70B calidad)</div>
+                          <div class="custom-option" data-value="70b">70B (mejor calidad)</div>
+                          <div class="custom-option" data-value="8b">8B (rápido y barato)</div>
+                        </div>
+                      </div>
+                      <input type="hidden" id="sgva-modelo-email" value="auto">
+                    </div>
+                  </div>
                 </div>
               </form>
             </div>
@@ -860,17 +894,37 @@
           </div>
 
           <div class="email-style-selector">
-            <button class="email-style-option" data-estilo="formal">
-              <i class="ph ph-buildings"></i>
-              <span>Formal</span>
+            <button class="email-style-option active" data-plantilla="auto">
+              <i class="ph ph-sparkle"></i>
+              <span>Auto (IA)</span>
             </button>
-            <button class="email-style-option" data-estilo="detallado">
-              <i class="ph ph-list-magnifying-glass"></i>
-              <span>Detallado</span>
+            <button class="email-style-option" data-plantilla="principal">
+              <i class="ph ph-paper-plane-tilt"></i>
+              <span>Principal</span>
             </button>
-            <button class="email-style-option" data-estilo="breve">
+            <button class="email-style-option" data-plantilla="directa">
               <i class="ph ph-lightning"></i>
-              <span>Breve</span>
+              <span>Directa y corta</span>
+            </button>
+            <button class="email-style-option" data-plantilla="tecnica">
+              <i class="ph ph-code"></i>
+              <span>Perfil técnico</span>
+            </button>
+            <button class="email-style-option" data-plantilla="vacante">
+              <i class="ph ph-target"></i>
+              <span>A una vacante</span>
+            </button>
+            <button class="email-style-option" data-plantilla="alineada">
+              <i class="ph ph-user-check"></i>
+              <span>Perfil alineado</span>
+            </button>
+            <button class="email-style-option" data-plantilla="espontanea">
+              <i class="ph ph-chat-centered-dots"></i>
+              <span>Contacto espontáneo</span>
+            </button>
+            <button class="email-style-option" data-plantilla="corporativa">
+              <i class="ph ph-buildings"></i>
+              <span>Corporativa</span>
             </button>
           </div>
 

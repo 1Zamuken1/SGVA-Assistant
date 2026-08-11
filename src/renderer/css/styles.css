@@ -1828,11 +1828,11 @@ body.low-end .oferta-card:hover { transform: none !important; }
 .btn-correo { font-size: 12.5px; padding: 7px 14px; }
 
 /* ============= MODAL DE CORREO ============= */
-.email-modal-card { max-width: 560px; width: 100%; }
+.email-modal-card { max-width: 640px; width: 100%; }
 
 .email-style-selector {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   margin: 16px 0;
 }

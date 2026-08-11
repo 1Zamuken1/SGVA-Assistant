@@ -324,14 +324,14 @@ ipcMain.handle('rank-offers', async (event, { groqApiKey }) => {
   }
 });
 
-ipcMain.handle('generate-email', async (event, { empresa, estilo, groqApiKey }) => {
+ipcMain.handle('generate-email', async (event, { empresa, plantilla, groqApiKey, modelo }) => {
   const validationError = validarGroqKey(groqApiKey);
   if (validationError) return { success: false, error: validationError };
 
   const perfil = database.obtenerPerfilCV();
   if (!perfil) return { success: false, error: 'Primero debes extraer tu perfil desde el CV para personalizar el correo.' };
 
-  const estiloValido = ['formal', 'detallado', 'breve'].includes(estilo) ? estilo : 'formal';
+  const plantillaId = ['principal', 'directa', 'tecnica', 'vacante', 'alineada', 'espontanea', 'corporativa', 'auto'].includes(plantilla) ? plantilla : 'auto';
 
   try {
     // Buscar la oferta por nombre de empresa
@@ -341,8 +341,8 @@ ipcMain.handle('generate-email', async (event, { empresa, estilo, groqApiKey }) 
       oferta = { Empresa: empresa || 'la empresa', Contacto: null, Funciones: [] };
     }
 
-    sendIalog(`Generando correo para ${oferta.Empresa} (estilo: ${estiloValido})...`);
-    const correo = await generarCorreoConIA(oferta, perfil, estiloValido, groqApiKey);
+    sendIalog(`Generando correo para ${oferta.Empresa} (plantilla: ${plantillaId})...`);
+    const correo = await generarCorreoConIA(oferta, perfil, plantillaId, groqApiKey, modelo);
     if (!correo) return { success: false, error: 'Groq no pudo generar el correo.' };
     return { success: true, correo };
   } catch (error) {

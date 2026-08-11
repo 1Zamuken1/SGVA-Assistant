@@ -33,6 +33,8 @@ const inputCity = document.getElementById('sgva-city');
 const inputLimit = document.getElementById('sgva-limit');
 const inputOrder = document.getElementById('sgva-order');
 const inputLowEnd = document.getElementById('sgva-low-end');
+const inputModeloRank = document.getElementById('sgva-modelo-rank');
+const inputModeloEmail = document.getElementById('sgva-modelo-email');
 
 // Custom Select Elements (Location)
 const wrapperDept = document.getElementById('wrapper-dept');
@@ -53,6 +55,8 @@ function loadSettings() {
   inputCity.value = localStorage.getItem('sgva-city') || 'BOGOTA D. C.';
   inputLimit.value = localStorage.getItem('sgva-limit') || '0';
   inputOrder.value = localStorage.getItem('sgva-order') || 'first';
+  inputModeloRank.value = localStorage.getItem('sgva-modelo-rank') || 'auto';
+  inputModeloEmail.value = localStorage.getItem('sgva-modelo-email') || 'auto';
 
   const isLowEnd = localStorage.getItem('sgva-low-end') === 'true';
   inputLowEnd.checked = isLowEnd;
@@ -61,6 +65,8 @@ function loadSettings() {
   // Apply limit & order to their custom selects
   applyStaticSelectValue('wrapper-limit', 'trigger-limit', 'options-limit', 'sgva-limit', inputLimit.value);
   applyStaticSelectValue('wrapper-order', 'trigger-order', 'options-order', 'sgva-order', inputOrder.value);
+  applyStaticSelectValue('wrapper-modelo-rank', 'trigger-modelo-rank', 'options-modelo-rank', 'sgva-modelo-rank', inputModeloRank.value);
+  applyStaticSelectValue('wrapper-modelo-email', 'trigger-modelo-email', 'options-modelo-email', 'sgva-modelo-email', inputModeloEmail.value);
 }
 
 form.addEventListener('submit', (e) => {
@@ -72,6 +78,8 @@ form.addEventListener('submit', (e) => {
   localStorage.setItem('sgva-city', inputCity.value);
   localStorage.setItem('sgva-limit', inputLimit.value);
   localStorage.setItem('sgva-order', inputOrder.value);
+  localStorage.setItem('sgva-modelo-rank', inputModeloRank.value);
+  localStorage.setItem('sgva-modelo-email', inputModeloEmail.value);
 
   const isLowEnd = inputLowEnd.checked;
   localStorage.setItem('sgva-low-end', isLowEnd);
@@ -141,6 +149,8 @@ function applyStaticSelectValue(wrapperId, triggerId, optionsId, hiddenId, value
 
 setupStaticCustomSelect('wrapper-limit', 'trigger-limit', 'options-limit', 'sgva-limit');
 setupStaticCustomSelect('wrapper-order', 'trigger-order', 'options-order', 'sgva-order');
+setupStaticCustomSelect('wrapper-modelo-rank', 'trigger-modelo-rank', 'options-modelo-rank', 'sgva-modelo-rank');
+setupStaticCustomSelect('wrapper-modelo-email', 'trigger-modelo-email', 'options-modelo-email', 'sgva-modelo-email');
 
 // ===== Dynamic Custom Selects (Dept & City) =====
 function setupDynamicCustomSelects() {
@@ -1049,13 +1059,13 @@ const emailCopy = document.getElementById('email-copy');
 const emailStyleOptions = document.querySelectorAll('.email-style-option');
 
 let emailEmpresaActual = '';
-let emailEstiloActual = 'formal';
+let emailPlantillaActual = 'auto';
 let emailGenerando = false;
 
 function openEmailModal(empresa) {
   if (emailGenerando) return;
   emailEmpresaActual = empresa;
-  emailEstiloActual = 'formal';
+  emailPlantillaActual = 'auto';
   emailModalEmpresa.textContent = empresa;
   emailModal.style.display = 'flex';
   emailProgress.style.display = 'none';
@@ -1063,7 +1073,7 @@ function openEmailModal(empresa) {
   emailCopy.style.display = 'none';
 
   emailStyleOptions.forEach(opt => {
-    opt.classList.toggle('active', opt.dataset.estilo === 'formal');
+    opt.classList.toggle('active', opt.dataset.plantilla === 'auto');
   });
 
   generarCorreo();
@@ -1082,7 +1092,7 @@ function generarCorreo() {
   emailResult.style.display = 'none';
   emailCopy.style.display = 'none';
 
-  window.api.generateEmail({ empresa: emailEmpresaActual, estilo: emailEstiloActual, groqApiKey: key })
+  window.api.generateEmail({ empresa: emailEmpresaActual, plantilla: emailPlantillaActual, groqApiKey: key, modelo: inputModeloEmail ? inputModeloEmail.value : 'auto' })
     .then(res => {
       emailGenerando = false;
       emailProgress.style.display = 'none';
@@ -1095,7 +1105,6 @@ function generarCorreo() {
         emailResult.style.display = '';
         emailAsunto.value = '';
         emailCuerpo.value = res && res.error ? res.error : 'No se pudo generar el correo.';
-        emailResult.style.display = '';
       }
     })
     .catch(err => {
@@ -1110,7 +1119,7 @@ function generarCorreo() {
 if (emailModal) {
   emailStyleOptions.forEach(opt => {
     opt.addEventListener('click', () => {
-      emailEstiloActual = opt.dataset.estilo;
+      emailPlantillaActual = opt.dataset.plantilla;
       emailStyleOptions.forEach(o => o.classList.toggle('active', o === opt));
       generarCorreo();
     });
