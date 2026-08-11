@@ -972,6 +972,7 @@ function renderPerfil(perfil) {
   markAiStepDone('ai-step-3', true);
   if (aiProgressSteps.length) setAiStepActive(4);
   if (btnRankOffers) btnRankOffers.disabled = false;
+  if (btnClearPriorities) btnClearPriorities.disabled = false;
   const campos = [
     ['Nombre', perfil.nombre],
     ['Email', perfil.email],
@@ -996,6 +997,32 @@ function renderPerfil(perfil) {
         </div>
       `).join('')}
     </div>`;
+}
+
+// Limpiar prioridades guardadas (re-clasificación)
+if (btnClearPriorities) {
+  btnClearPriorities.addEventListener('click', async () => {
+    if (!confirm('¿Borrar la prioridad, puntaje y motivo de TODAS las ofertas guardadas? Podrás volver a clasificarlas con la nueva versión de la IA.')) return;
+    btnClearPriorities.disabled = true;
+    try {
+      const res = await window.api.clearPriorities();
+      if (res && res.success) {
+        iaLog('Prioridades limpiadas. Ejecuta "Clasificar Ofertas" para reclasificar todo.');
+        rankSummary.style.display = 'none';
+        await loadSavedOffers();
+        refreshPriorityFilters();
+        renderResults(currentOffers);
+        updateExportLabel();
+      } else {
+        alert('No se pudieron limpiar las prioridades.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error al limpiar las prioridades.');
+    } finally {
+      btnClearPriorities.disabled = false;
+    }
+  });
 }
 
 // Clasificar ofertas

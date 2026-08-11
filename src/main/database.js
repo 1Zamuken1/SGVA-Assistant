@@ -83,6 +83,16 @@ class Database {
     this.guardarEnDisco();
   }
 
+  // Borra la clasificación previa (prioridad, puntaje, motivo) de todas las ofertas guardadas
+  limpiarPrioridades() {
+    for (const oferta of Object.values(this.ofertasGuardadas)) {
+      delete oferta.prioridad;
+      delete oferta.puntaje;
+      delete oferta.motivo;
+    }
+    this.guardarEnDisco();
+  }
+
   generarHash(textoRaw) {
     // Tomamos los primeros 100 caracteres significativos para evitar variaciones por espacios
     const limpio = textoRaw.replace(/\s+/g, ' ').trim().substring(0, 150);

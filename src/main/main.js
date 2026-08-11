@@ -110,10 +110,15 @@ ipcMain.handle('get-saved-offers', async () => {
    return database.obtenerTodas();
  });
 
- ipcMain.handle('clear-database', async () => {
-   database.limpiarBaseDeDatos();
-   return { success: true };
- });
+ipcMain.handle('clear-database', async () => {
+    database.limpiarBaseDeDatos();
+    return { success: true };
+  });
+
+  ipcMain.handle('clear-priorities', async () => {
+    database.limpiarPrioridades();
+    return { success: true };
+  });
 
 ipcMain.handle('export-data', async (event, data, format) => {
   try {

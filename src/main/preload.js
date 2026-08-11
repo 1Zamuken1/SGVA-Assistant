@@ -10,6 +10,9 @@ contextBridge.exposeInMainWorld('api', {
   // Función para limpiar la base de datos
   clearDatabase: () => ipcRenderer.invoke('clear-database'),
 
+  // Función para limpiar solo las prioridades (re-clasificar todo)
+  clearPriorities: () => ipcRenderer.invoke('clear-priorities'),
+
   // Exportación
   exportData: (data, format) => ipcRenderer.invoke('export-data', data, format),
 
