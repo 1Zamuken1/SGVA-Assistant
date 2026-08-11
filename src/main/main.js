@@ -26,6 +26,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: 'SGVA Assistant',
+    show: false, // Evita el flash de pantalla negra: la ventana se muestra cuando está lista
     backgroundColor: '#0f172a', // Tailwind slate-900 oscuro base
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -36,6 +37,24 @@ function createWindow() {
 
   // Ocultar barra de menú predeterminada de Windows
   mainWindow.setMenuBarVisibility(false);
+
+  // Mostrar la ventana solo cuando el contenido esté renderizado
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+  });
+
+  // Respaldo: si por alguna razón el renderer tarda en cargar
+  // (p. ej. recursos externos lentos), muestra la ventana igualmente
+  const showFallback = setTimeout(() => {
+    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+  }, 4000);
+
+  mainWindow.once('closed', () => {
+    clearTimeout(showFallback);
+    mainWindow = null;
+  });
 
   mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 }
