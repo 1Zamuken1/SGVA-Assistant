@@ -1491,14 +1491,109 @@ body.low-end .oferta-card:hover { transform: none !important; }
 
 /* ============= VISTA IA ============= */
 .ai-layout {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 20px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 860px;
+  margin: 0 auto;
 }
 
-.ai-main { display: flex; flex-direction: column; gap: 16px; }
-.ai-sidebar { display: flex; flex-direction: column; gap: 16px; }
+.ai-progress-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 0 6px;
+}
+
+.ai-progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-align: center;
+  transition: color 0.25s;
+  min-width: 62px;
+}
+
+.ai-progress-ico {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  transition: background 0.25s, border-color 0.25s, color 0.25s;
+}
+
+.ai-progress-step.active { color: var(--accent); }
+.ai-progress-step.active .ai-progress-ico {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.ai-progress-step.done { color: var(--green); }
+.ai-progress-step.done .ai-progress-ico {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.ai-progress-line {
+  flex: 0 1 42px;
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-bottom: 22px;
+}
+
+.ai-progress-line.done { background: var(--green); }
+
+.ai-step {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+}
+
+.ai-step-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.ai-step-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+}
+
+.ai-step-title h3 { font-size: 16px; font-weight: 600; margin: 0; }
+.ai-step-title p { font-size: 12.5px; margin: 2px 0 0; }
+
+.ai-step-status {
+  margin-left: auto;
+  font-size: 20px;
+  color: var(--green);
+  display: none;
+}
+
+.ai-step.done .ai-step-status { display: block; }
+
+.ai-log-card { padding: 22px; }
+
+/* ============= AYUDAS (settings) ============= */
 
 .cv-dropzone {
   border: 2px dashed var(--border);
@@ -1617,6 +1712,44 @@ body.low-end .oferta-card:hover { transform: none !important; }
 .rank-med span { color: #f59e0b; }
 .rank-low { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.35); }
 .rank-low span { color: #ef4444; }
+
+.toggle-row-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  margin-left: auto;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.02);
+  white-space: nowrap;
+}
+
+.toggle-row-inline input { accent-color: var(--accent); }
+
+.ai-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
+}
+
+.ai-batch { display: flex; flex-direction: column; gap: 14px; }
+
+.ai-batch-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ai-batch-head i { font-size: 22px; color: var(--accent); flex-shrink: 0; margin-top: 2px; }
+.ai-batch-head strong { display: block; font-size: 14px; }
+.ai-batch-head p { font-size: 12.5px; margin: 2px 0 0; }
+
+.email-style-selector.batch { grid-template-columns: repeat(4, 1fr); margin: 0; }
 
 .ia-log-box {
   background: rgba(3, 7, 16, 0.8);
@@ -1743,6 +1876,9 @@ body.low-end .oferta-card:hover { transform: none !important; }
 .email-cuerpo-textarea { min-height: 200px; }
 
 @media (max-width: 1100px) {
-  .ai-layout { grid-template-columns: 1fr; }
   .profile-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 700px) {
+  .email-style-selector { grid-template-columns: repeat(2, 1fr); }
 }

@@ -8,7 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="assets/icons/phosphor.css">
+  <link rel="stylesheet" href="assets/icons/phosphor-fill.css">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -48,7 +49,7 @@
         </button>
         <button class="nav-item" data-target="ai">
           <span class="nav-icon"><i class="ph ph-sparkle"></i></span>
-          <span class="nav-label">IA</span>
+          <span class="nav-label">Asistente IA</span>
         </button>
         <button class="nav-item" data-target="settings">
           <span class="nav-icon"><i class="ph ph-sliders-horizontal"></i></span>
@@ -364,119 +365,210 @@
 
         <div class="ai-layout">
 
-          <!-- Columna izquierda: CV -->
-          <div class="ai-main">
-            <div class="settings-section glass-card">
-              <div class="settings-section-header">
-                <div class="section-icon icon-purple"><i class="ph ph-file"></i></div>
+          <!-- Indicador de progreso -->
+          <div class="ai-progress-steps">
+            <div class="ai-progress-step active" data-ai-step="1">
+              <div class="ai-progress-ico"><i class="ph-fill ph-file"></i></div>
+              <span>Tu CV</span>
+            </div>
+            <div class="ai-progress-line"></div>
+            <div class="ai-progress-step" data-ai-step="2">
+              <div class="ai-progress-ico"><i class="ph-fill ph-text-aa"></i></div>
+              <span>CV Ordenado</span>
+            </div>
+            <div class="ai-progress-line"></div>
+            <div class="ai-progress-step" data-ai-step="3">
+              <div class="ai-progress-ico"><i class="ph-fill ph-identification-card"></i></div>
+              <span>Tu Perfil</span>
+            </div>
+            <div class="ai-progress-line"></div>
+            <div class="ai-progress-step" data-ai-step="4">
+              <div class="ai-progress-ico"><i class="ph-fill ph-ranking"></i></div>
+              <span>Clasificar</span>
+            </div>
+          </div>
+
+          <!-- Paso 1: Tu CV -->
+          <div class="ai-step glass-card" id="ai-step-1">
+            <div class="ai-step-head">
+              <div class="ai-step-badge">1</div>
+              <div class="ai-step-title">
+                <h3>Tu CV</h3>
+                <p class="text-muted">Carga tu currículum (PDF, DOCX, TXT o pega el texto). Se recomienda formato ATS.</p>
+              </div>
+              <div class="ai-step-status" data-ai-status="1">
+                <i class="ph ph-check-circle"></i>
+              </div>
+            </div>
+
+            <div class="cv-dropzone" id="cv-dropzone">
+              <input type="file" id="cv-file-input" accept=".pdf,.docx,.txt,.md" style="display:none">
+              <div class="cv-dropzone-icon"><i class="ph-fill ph-cloud-arrow-up"></i></div>
+              <strong id="cv-dropzone-title">Arrastra tu CV aquí o haz clic</strong>
+              <p class="text-muted">PDF · DOCX · TXT · MD — recomendado formato ATS</p>
+            </div>
+
+            <div class="cv-paste-toggle" id="cv-paste-toggle">
+              <i class="ph ph-text-aa"></i>
+              <span>O pega el texto de tu CV</span>
+            </div>
+
+            <div class="cv-textarea-wrap" id="cv-textarea-wrap" style="display:none">
+              <textarea id="cv-pasted-text" class="cv-textarea" placeholder="Pega aquí el contenido de tu CV..."></textarea>
+            </div>
+
+            <div class="cv-actions">
+              <button type="button" class="btn btn-outline" id="btn-sanitize-cv" disabled>
+                <i class="ph ph-sparkle"></i>
+                Ordenar con IA
+              </button>
+              <button type="button" class="btn btn-primary" id="btn-extract-profile" disabled>
+                <i class="ph ph-scan"></i>
+                Extraer Perfil
+              </button>
+            </div>
+            <div class="cv-quality-warning" id="cv-quality-warning" style="display:none">
+              <i class="ph-fill ph-warning"></i>
+              <span></span>
+            </div>
+          </div>
+
+          <!-- Paso 2: CV Ordenado -->
+          <div class="ai-step glass-card" id="ai-step-2" style="display:none">
+            <div class="ai-step-head">
+              <div class="ai-step-badge">2</div>
+              <div class="ai-step-title">
+                <h3>CV Ordenado</h3>
+                <p class="text-muted">Texto reconstruido por la IA. Edítalo antes de continuar.</p>
+              </div>
+              <div class="ai-step-status" data-ai-status="2">
+                <i class="ph ph-check-circle"></i>
+              </div>
+            </div>
+            <textarea id="cv-clean-text" class="cv-textarea cv-textarea-tall"></textarea>
+            <div class="cv-actions">
+              <button type="button" class="btn btn-primary" id="btn-extract-profile-2">
+                <i class="ph ph-scan"></i>
+                Extraer Perfil
+              </button>
+            </div>
+          </div>
+
+          <!-- Paso 3: Perfil Detectado -->
+          <div class="ai-step glass-card" id="ai-step-3" style="display:none">
+            <div class="ai-step-head">
+              <div class="ai-step-badge">3</div>
+              <div class="ai-step-title">
+                <h3>Tu Perfil</h3>
+                <p class="text-muted">Revisa y edita los datos extraídos de tu CV.</p>
+              </div>
+              <div class="ai-step-status" data-ai-status="3">
+                <i class="ph ph-check-circle"></i>
+              </div>
+            </div>
+            <div id="cv-profile-content"></div>
+          </div>
+
+          <!-- Paso 4: Clasificar Ofertas -->
+          <div class="ai-step glass-card" id="ai-step-4" style="display:none">
+            <div class="ai-step-head">
+              <div class="ai-step-badge">4</div>
+              <div class="ai-step-title">
+                <h3>Clasificar Ofertas</h3>
+                <p class="text-muted">La IA comparará tu perfil con las ofertas guardadas y asignará prioridad y puntaje.</p>
+              </div>
+              <div class="ai-step-status" data-ai-status="4">
+                <i class="ph ph-check-circle"></i>
+              </div>
+            </div>
+            <div class="cv-actions">
+              <button type="button" class="btn btn-primary" id="btn-rank-offers" disabled>
+                <i class="ph ph-ranking"></i>
+                Clasificar Ofertas
+              </button>
+              <button type="button" class="btn btn-outline" id="btn-clear-priorities" title="Borra prioridad, puntaje y motivo de todas las ofertas para volver a clasificarlas con la nueva versión" disabled>
+                <i class="ph ph-eraser"></i>
+                Limpiar prioridades
+              </button>
+              <label class="toggle-row-inline" title="Ahorra tokens: omite las ofertas que ya tienen prioridad asignada">
+                <input type="checkbox" id="rank-only-new" checked>
+                <span>Solo sin clasificar</span>
+              </label>
+            </div>
+            <div class="rank-summary" id="rank-summary" style="display:none">
+              <div class="rank-stat rank-high"><span id="rank-high-num">0</span><small>Alta</small></div>
+              <div class="rank-stat rank-med"><span id="rank-med-num">0</span><small>Media</small></div>
+              <div class="rank-stat rank-low"><span id="rank-low-num">0</span><small>Baja</small></div>
+            </div>
+
+            <hr class="ai-divider">
+            <div class="ai-batch">
+              <div class="ai-batch-head">
+                <i class="ph-fill ph-envelope-simple-open"></i>
                 <div>
-                  <h3>1 · Tu CV</h3>
-                  <p class="text-muted">Carga tu currículum (PDF, DOCX, TXT o pega el texto). Se recomienda formato ATS.</p>
+                  <strong>Autopostulación en lote</strong>
+                  <p class="text-muted">Genera correos para todas las ofertas de prioridad Alta y guárdalos en un solo archivo Markdown.</p>
                 </div>
               </div>
-
-              <div class="cv-dropzone" id="cv-dropzone">
-                <input type="file" id="cv-file-input" accept=".pdf,.docx,.txt,.md" style="display:none">
-                <div class="cv-dropzone-icon"><i class="ph-fill ph-cloud-arrow-up"></i></div>
-                <strong id="cv-dropzone-title">Arrastra tu CV aquí o haz clic</strong>
-                <p class="text-muted">PDF · DOCX · TXT · MD — recomendado formato ATS</p>
-              </div>
-
-              <div class="cv-paste-toggle" id="cv-paste-toggle">
-                <i class="ph ph-text-aa"></i>
-                <span>O pega el texto de tu CV</span>
-              </div>
-
-              <div class="cv-textarea-wrap" id="cv-textarea-wrap" style="display:none">
-                <textarea id="cv-pasted-text" class="cv-textarea" placeholder="Pega aquí el contenido de tu CV..."></textarea>
-              </div>
-
-              <div class="cv-actions">
-                <button type="button" class="btn btn-outline" id="btn-sanitize-cv" disabled>
+              <div class="email-style-selector batch" id="batch-plantilla-selector">
+                <button class="email-style-option active" data-plantilla="auto">
                   <i class="ph ph-sparkle"></i>
-                  Ordenar con IA
+                  <span>Auto (IA)</span>
                 </button>
-                <button type="button" class="btn btn-primary" id="btn-extract-profile" disabled>
-                  <i class="ph ph-scan"></i>
-                  Extraer Perfil
+                <button class="email-style-option" data-plantilla="principal">
+                  <i class="ph ph-paper-plane-tilt"></i>
+                  <span>Principal</span>
                 </button>
-              </div>
-              <div class="cv-quality-warning" id="cv-quality-warning" style="display:none">
-                <i class="ph-fill ph-warning"></i>
-                <span></span>
-              </div>
-            </div>
-
-            <!-- Resultado: CV limpio -->
-            <div class="settings-section glass-card" id="cv-clean-section" style="display:none">
-              <div class="settings-section-header">
-                <div class="section-icon icon-green"><i class="ph ph-text-aa"></i></div>
-                <div>
-                  <h3>CV Ordenado</h3>
-                  <p class="text-muted">Texto reconstruido por la IA. Puedes editarlo antes de extraer el perfil.</p>
-                </div>
-              </div>
-              <textarea id="cv-clean-text" class="cv-textarea cv-textarea-tall"></textarea>
-              <div class="cv-actions">
-                <button type="button" class="btn btn-primary" id="btn-extract-profile-2">
-                  <i class="ph ph-scan"></i>
-                  Extraer Perfil
+                <button class="email-style-option" data-plantilla="directa">
+                  <i class="ph ph-lightning"></i>
+                  <span>Directa</span>
                 </button>
-              </div>
-            </div>
-
-            <!-- Resultado: Perfil extraído -->
-            <div class="settings-section glass-card" id="cv-profile-section" style="display:none">
-              <div class="settings-section-header">
-                <div class="section-icon icon-blue"><i class="ph ph-identification-card"></i></div>
-                <div>
-                  <h3>2 · Perfil Detectado</h3>
-                  <p class="text-muted">Revisa y edita los datos extraídos de tu CV.</p>
-                </div>
-              </div>
-              <div id="cv-profile-content"></div>
-            </div>
-
-            <!-- Clasificación -->
-            <div class="settings-section glass-card">
-              <div class="settings-section-header">
-                <div class="section-icon icon-orange"><i class="ph ph-funnel"></i></div>
-                <div>
-                  <h3>3 · Clasificar Ofertas</h3>
-                  <p class="text-muted">La IA comparará tu perfil con las ofertas guardadas y asignará prioridad y puntaje.</p>
-                </div>
+                <button class="email-style-option" data-plantilla="tecnica">
+                  <i class="ph ph-code"></i>
+                  <span>Técnico</span>
+                </button>
+                <button class="email-style-option" data-plantilla="vacante">
+                  <i class="ph ph-target"></i>
+                  <span>Vacante</span>
+                </button>
+                <button class="email-style-option" data-plantilla="alineada">
+                  <i class="ph ph-user-check"></i>
+                  <span>Alineada</span>
+                </button>
+                <button class="email-style-option" data-plantilla="espontanea">
+                  <i class="ph ph-chat-centered-dots"></i>
+                  <span>Espontáneo</span>
+                </button>
+                <button class="email-style-option" data-plantilla="corporativa">
+                  <i class="ph ph-buildings"></i>
+                  <span>Corporativa</span>
+                </button>
               </div>
               <div class="cv-actions">
-                <button type="button" class="btn btn-primary" id="btn-rank-offers" disabled>
-                  <i class="ph ph-ranking"></i>
-                  Clasificar Todas las Ofertas
+                <button type="button" class="btn btn-outline" id="btn-batch-email" disabled>
+                  <i class="ph ph-stack-simple"></i>
+                  Generar Correos (Alta)
                 </button>
-              </div>
-              <div class="rank-summary" id="rank-summary" style="display:none">
-                <div class="rank-stat rank-high"><span id="rank-high-num">0</span><small>Alta</small></div>
-                <div class="rank-stat rank-med"><span id="rank-med-num">0</span><small>Media</small></div>
-                <div class="rank-stat rank-low"><span id="rank-low-num">0</span><small>Baja</small></div>
               </div>
             </div>
           </div>
 
-          <!-- Columna derecha: Log IA -->
-          <div class="ai-sidebar">
-            <div class="help-card glass-card">
-              <div class="help-card-header">
-                <i class="ph-fill ph-terminal"></i>
-                <h3>Progreso de la IA</h3>
-              </div>
-              <div class="ia-log-box" id="ia-log-box">
-                <p class="text-muted">Esperando actividad...</p>
-              </div>
+          <!-- Log de IA -->
+          <div class="ai-log-card glass-card">
+            <div class="help-card-header">
+              <i class="ph-fill ph-terminal"></i>
+              <h3>Progreso de la IA</h3>
             </div>
-            <div class="tip-card">
-              <i class="ph-fill ph-lightbulb"></i>
-              <div>
-                <strong>Consejo</strong>
-                <p>Si tu CV tiene un diseño con columnas o cajas, pulsa "Ordenar con IA" antes de extraer el perfil para mejorar la lectura.</p>
-              </div>
+            <div class="ia-log-box" id="ia-log-box">
+              <p class="text-muted">Esperando actividad...</p>
+            </div>
+          </div>
+
+          <div class="tip-card">
+            <i class="ph-fill ph-lightbulb"></i>
+            <div>
+              <strong>Consejo</strong>
+              <p>Si tu CV tiene un diseño con columnas o cajas, pulsa "Ordenar con IA" antes de extraer el perfil para mejorar la lectura.</p>
             </div>
           </div>
         </div>

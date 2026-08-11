@@ -757,17 +757,36 @@ const cvPastedText = document.getElementById('cv-pasted-text');
 const btnSanitizeCv = document.getElementById('btn-sanitize-cv');
 const btnExtractProfile = document.getElementById('btn-extract-profile');
 const btnExtractProfile2 = document.getElementById('btn-extract-profile-2');
-const cvCleanSection = document.getElementById('cv-clean-section');
+const cvCleanSection = document.getElementById('ai-step-2');
 const cvCleanText = document.getElementById('cv-clean-text');
-const cvProfileSection = document.getElementById('cv-profile-section');
+const cvProfileSection = document.getElementById('ai-step-3');
 const cvProfileContent = document.getElementById('cv-profile-content');
 const cvQualityWarning = document.getElementById('cv-quality-warning');
 const btnRankOffers = document.getElementById('btn-rank-offers');
+const btnClearPriorities = document.getElementById('btn-clear-priorities');
 const rankSummary = document.getElementById('rank-summary');
 const iaLogBox = document.getElementById('ia-log-box');
+const aiProgressSteps = document.querySelectorAll('.ai-progress-step');
 
 let cvActual = ''; // texto crudo o pegado
 let cvNombreArchivo = '';
+
+function setAiStepActive(num) {
+  if (!aiProgressSteps || !aiProgressSteps.length) return;
+  aiProgressSteps.forEach(s => {
+    const stepNum = parseInt(s.dataset.aiStep, 10);
+    s.classList.toggle('active', stepNum === num);
+    s.classList.toggle('done', stepNum < num);
+  });
+
+  const lineas = document.querySelectorAll('.ai-progress-line');
+  lineas.forEach((l, i) => l.classList.toggle('done', i + 1 < num));
+}
+
+function markAiStepDone(stepId, done) {
+  const el = document.getElementById(stepId);
+  if (el) el.classList.toggle('done', done);
+}
 
 function cvGroqKey() {
   return localStorage.getItem('groq-key') || '';
@@ -841,6 +860,8 @@ function onCvLoaded(resultado) {
   cvCleanSection.style.display = 'none';
   cvProfileSection.style.display = 'none';
   iaLog(`CV cargado (${cvActual.length} caracteres).`);
+  markAiStepDone('ai-step-1', true);
+  if (aiProgressSteps.length) setAiStepActive(2);
 }
 
 if (cvPasteToggle) {
@@ -862,6 +883,8 @@ if (cvPastedText) {
       setCvButtonsEnabled(true);
       cvQualityWarning.style.display = 'none';
       cvCleanSection.style.display = 'none';
+      markAiStepDone('ai-step-1', true);
+      if (aiProgressSteps.length) setAiStepActive(2);
     } else {
       setCvButtonsEnabled(false);
     }
@@ -882,6 +905,8 @@ if (btnSanitizeCv) {
         cvCleanText.value = res.textoLimpio;
         btnExtractProfile2.disabled = false;
         iaLog('CV ordenado correctamente.');
+        markAiStepDone('ai-step-2', true);
+        if (aiProgressSteps.length) setAiStepActive(3);
       } else {
         alert(res && res.error ? res.error : 'Error al ordenar el CV.');
         iaLog('Error al ordenar el CV.');
@@ -934,6 +959,9 @@ async function extractProfile(textoCv) {
 
 function renderPerfil(perfil) {
   cvProfileSection.style.display = '';
+  markAiStepDone('ai-step-3', true);
+  if (aiProgressSteps.length) setAiStepActive(4);
+  if (btnRankOffers) btnRankOffers.disabled = false;
   const campos = [
     ['Nombre', perfil.nombre],
     ['Email', perfil.email],
@@ -1004,7 +1032,6 @@ async function loadSavedProfile() {
     const res = await window.api.getCvProfile();
     if (res && res.success && res.perfil) {
       renderPerfil(res.perfil);
-      if (btnRankOffers) btnRankOffers.disabled = false;
     }
   } catch (e) {
     console.error(e);
