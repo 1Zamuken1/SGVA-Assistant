@@ -366,3 +366,80 @@ ipcMain.handle('copy-to-clipboard', async (event, { texto }) => {
     return { success: false, error: error.message };
   }
 });
+
+// Genera correos en lote (prioridad Alta por defecto) y los guarda en un único Markdown
+ipcMain.handle('generate-emails-batch', async (event, { groqApiKey, plantilla, modelo }) => {
+  const validationError = validarGroqKey(groqApiKey);
+  if (validationError) return { success: false, error: validationError };
+
+  const perfil = database.obtenerPerfilCV();
+  if (!perfil) return { success: false, error: 'Primero debes extraer tu perfil desde el CV para personalizar los correos.' };
+
+  const plantillaId = ['principal', 'directa', 'tecnica', 'vacante', 'alineada', 'espontanea', 'corporativa', 'auto'].includes(plantilla) ? plantilla : 'auto';
+
+  // Ofertas de prioridad Alta con correo de contacto disponible
+  const ofertas = database.obtenerTodas()
+    .filter(o => o.prioridad === 'alta')
+    .filter(o => o.Contacto && String(o.Contacto).trim() !== 'No especificado' && String(o.Contacto).trim() !== '');
+
+  if (ofertas.length === 0) {
+    return { success: false, error: 'No hay ofertas de prioridad Alta con contacto disponible para generar correos.' };
+  }
+
+  try {
+    const correos = [];
+    sendIalog(`Generando ${ofertas.length} correos en lote (plantilla: ${plantillaId})...`);
+
+    for (let i = 0; i < ofertas.length; i++) {
+      const oferta = ofertas[i];
+      sendIalog(`Correo ${i + 1}/${ofertas.length}: ${oferta.Empresa || 'Sin nombre'}`);
+      const correo = await generarCorreoConIA(oferta, perfil, plantillaId, groqApiKey, modelo);
+      if (correo && correo.asunto) {
+        correos.push({
+          empresa: oferta.Empresa || 'No especificada',
+          contacto: oferta.Contacto || 'Sin contacto',
+          asunto: correo.asunto,
+          cuerpo: correo.cuerpo,
+          plantilla: correo.plantillaUsada || plantillaId
+        });
+      } else {
+        correos.push({
+          empresa: oferta.Empresa || 'No especificada',
+          contacto: oferta.Contacto || 'Sin contacto',
+          asunto: '(no generado)',
+          cuerpo: 'No se pudo generar el correo.',
+          plantilla: plantillaId
+        });
+      }
+      // Espera entre llamadas para respetar límites de Groq
+      if (i < ofertas.length - 1) await new Promise(r => setTimeout(r, 1000));
+    }
+
+    // Pedir destino del archivo
+    const { filePath, canceled } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Guardar correos generados',
+      defaultPath: path.join(app.getPath('downloads'), 'Correos_Postulacion.md'),
+      filters: [{ name: 'Markdown', extensions: ['md'] }]
+    });
+
+    if (canceled || !filePath) return { success: false, cancelado: true };
+
+    let md = '# Correos de Postulación Generados\n\n';
+    md += `_Plantilla: ${plantillaId} · Total: ${correos.length}_\n\n---\n\n`;
+    correos.forEach((c, i) => {
+      md += `## ${c.empresa}\n`;
+      md += `- **Contacto:** ${c.contacto}\n`;
+      md += `- **Plantilla:** ${c.plantilla}\n\n`;
+      md += `**Asunto:** ${c.asunto}\n\n`;
+      md += `${c.cuerpo}\n\n`;
+      md += `---\n\n`;
+    });
+
+    fs.writeFileSync(filePath, md, 'utf-8');
+    sendIalog(`Lote completado. Archivo guardado: ${filePath}`);
+    return { success: true, filePath, total: correos.length };
+  } catch (error) {
+    console.error('Error generando correos en lote:', error);
+    return { success: false, error: error.message };
+  }
+});

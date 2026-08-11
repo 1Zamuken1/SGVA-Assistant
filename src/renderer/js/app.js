@@ -973,6 +973,7 @@ function renderPerfil(perfil) {
   if (aiProgressSteps.length) setAiStepActive(4);
   if (btnRankOffers) btnRankOffers.disabled = false;
   if (btnClearPriorities) btnClearPriorities.disabled = false;
+  if (btnBatchEmail) btnBatchEmail.disabled = false;
   const campos = [
     ['Nombre', perfil.nombre],
     ['Email', perfil.email],
@@ -1061,6 +1062,42 @@ if (btnRankOffers) {
     } finally {
       btnRankOffers.disabled = false;
     }
+  });
+}
+
+// ===== Autopostulación en lote =====
+const btnBatchEmail = document.getElementById('btn-batch-email');
+const batchPlantillaSelector = document.getElementById('batch-plantilla-selector');
+let batchPlantillaActual = 'auto';
+
+if (batchPlantillaSelector) {
+  batchPlantillaSelector.querySelectorAll('.email-style-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      batchPlantillaActual = opt.dataset.plantilla;
+      batchPlantillaSelector.querySelectorAll('.email-style-option').forEach(o => o.classList.toggle('active', o === opt));
+    });
+  });
+}
+
+if (btnBatchEmail) {
+  btnBatchEmail.addEventListener('click', async () => {
+    const key = cvGroqKey();
+    if (!key) { alert('Configura tu API Key de Groq en Configuración.'); return; }
+    btnBatchEmail.disabled = true;
+    await window.api.generateEmailsBatch({ groqApiKey: key, plantilla: batchPlantillaActual, modelo: inputModeloEmail ? inputModeloEmail.value : 'auto' })
+      .then(res => {
+        if (res && res.success) {
+          alert(`¡Listo! ${res.total} correos guardados en ${res.filePath}`);
+          iaLog(`Lote guardado (${res.total} correos).`);
+        } else if (res && res.cancelado) {
+          iaLog('Lote cancelado por el usuario.');
+        } else {
+          alert('Error al generar el lote: ' + (res && res.error ? res.error : 'Desconocido'));
+          iaLog('Error al generar el lote de correos.');
+        }
+      })
+      .catch(e => { console.error(e); alert('Error: ' + (e.message || 'Desconocido')); })
+      .finally(() => { btnBatchEmail.disabled = false; });
   });
 }
 

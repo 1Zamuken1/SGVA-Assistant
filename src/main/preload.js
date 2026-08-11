@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('api', {
   getCvProfile: () => ipcRenderer.invoke('get-cv-profile'),
   rankOffers: (options) => ipcRenderer.invoke('rank-offers', options),
   generateEmail: (options) => ipcRenderer.invoke('generate-email', options),
+  generateEmailsBatch: (options) => ipcRenderer.invoke('generate-emails-batch', options),
   copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', { texto: text }),
 
   // Escuchar logs del proceso IA
