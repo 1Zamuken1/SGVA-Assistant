@@ -8,6 +8,7 @@ Eres un asistente experto en estructurar información.
 Tu tarea es leer el contenido de una oferta de prácticas en bruto y extraer los datos en formato JSON estrictamente válido. 
 Extrae lo siguiente:
 - Empresa
+- Cargo (título del cargo o nombre de la vacante ofrecida)
 - Contacto (Persona de contacto, email, teléfono)
 - FechaLimite (fecha límite de postulación)
 - Funciones (lista de funciones principales)
@@ -17,6 +18,7 @@ Si algo no está, devuelve null para ese campo.
 Ejemplo:
 {
   "Empresa": "Nombre Empresa",
+  "Cargo": "Desarrollador de Software",
   "Contacto": "Juan Perez - juan@empresa.com",
   "FechaLimite": "2023-12-31",
   "Funciones": ["Desarrollar apps", "Testear software"]
@@ -78,13 +80,13 @@ Reglas:
 `;
 
 const SYSTEM_CLASIFICAR_OFERTAS = `
-Eres un asistente experto en selección de talento. La IA evalúa qué tan bien encaja el perfil de un candidato con cada oferta de práctica.
+Eres un asesor experto en selección de talento y programas de aprendizaje SENA. Tu labor es evaluar qué tan bien encaja el perfil de un candidato con cada oferta de práctica, imitando el juicio razonable de un reclutador humano.
 
 Recibirás:
-1. Un PERFIL DEL CANDIDATO en formato JSON.
-2. Una lista de OFERTAS de práctica, cada una con empresas y sus funciones.
+1. Un PERFIL DEL CANDIDATO en formato JSON (incluye formación, nivel, semestre, habilidades, áreas de interés, idiomas y experiencia).
+2. Una lista de OFERTAS de práctica, cada una con el cargo/vacante, la empresa y las funciones.
 
-Para CADA oferta debes devolver un JSON con la siguiente estructura:
+Para CADA oferta devuelve exactamente la estructura:
 {
   "empresas": [
     {
@@ -96,14 +98,26 @@ Para CADA oferta debes devolver un JSON con la siguiente estructura:
   ]
 }
 
-Criterios de prioridad:
-- "alta": hay coincidencia fuerte entre las habilidades del candidato y las funciones de la oferta (más del 70%).
-- "media": coincidencia parcial (40-70%).
-- "baja": poca o ninguna coincidencia (menos del 40%), o la oferta no tiene información suficiente.
+Cómo decidir la prioridad:
+- Evalúa el encaje GLOBAL, no solo las funciones: considera el cargo/vacante, las funciones descritas, el área de interés del candidato, su nivel de formación, su semestre y la experiencia relevante.
+- "alta": el cargo y las funciones corresponden claramente al perfil y área de interés del candidato (encaje fuerte; puntaje 70-100).
+- "media": hay una coincidencia razonable pero no exacta (encaje parcial; puntaje 40-69). Si la oferta se relaciona con el área general del candidato aunque tenga poca información detallada, clasifícala aquí en lugar de en "baja".
+- "baja": el cargo o las funciones son de un área claramente ajena al perfil (encaje débil o nulo; puntaje 0-39).
 
-El puntaje 0-100 debe reflejar qué tanto encaja el candidato con la oferta considerando habilidades, área de interés y nivel.
+Reglas obligatorias:
+- NO uses "baja" solo porque la oferta tenga poca información. Si el cargo se relaciona con el área del candidato, usa "media" y acláralo en el motivo.
+- NO inventes requisitos ni restricciones (edad, ubicación, experiencia) que no aparezcan en la oferta.
+- El puntaje debe reflejar el encaje real; no repartas puntajes máximos ni mínimos de forma arbitraria.
+- Devuelve SOLO el JSON. No omitas ninguna oferta de la lista. Usa exactamente el nombre de la empresa tal como aparece.
 
-Devuelve SOLO el JSON. No omitas ninguna oferta de la lista. Usa exactamente el nombre de la empresa de la oferta.
+Ejemplo de referencia:
+Perfil: candidato en desarrollo de software (tecnólogo, 6° semestre, dominio HTML/CSS/JavaScript, interés en desarrollo web).
+1. Empresa: "TechSoft". Cargo: "Desarrollador Web". Funciones: construir interfaces con HTML, CSS y JavaScript.
+   → { prioridad: "alta", puntaje: 92, motivo: "El cargo coincide con su área de interés y las funciones usan sus tecnologías principales (encaje fuerte)" }
+2. Empresa: "DataCorp". Cargo: "Analista de Datos Jr". Funciones: depurar bases de datos, generar reportes.
+   → { prioridad: "media", puntaje: 55, motivo: "Área de datos relacionada con su formación técnica pero fuera de su foco principal en desarrollo web (encaje parcial)" }
+3. Empresa: "Innova Salud". Cargo: "Auxiliar de Enfermería". Funciones: atención al paciente, toma de signos vitales.
+   → { prioridad: "baja", puntaje: 12, motivo: "El cargo y las funciones pertenecen a un área de salud ajena a su perfil de desarrollo de software (encaje nulo)" }
 `;
 
 // Plantillas de correo base (las variables {...} son rellenadas por la IA)
@@ -422,24 +436,45 @@ async function extraerPerfilCV(textoCv, apiKey) {
   return parsearJsonRespuesta(contenido);
 }
 
-// Clasifica ofertas en lotes de 20 comparando contra el perfil del candidato
-async function clasificarOfertas(perfil, ofertas, apiKey) {
+// Clasifica ofertas en lotes de 20 comparando contra el perfil del candidato.
+// Si soloNuevas es true, omite ofertas que ya tienen prioridad/puntaje asignado.
+async function clasificarOfertas(perfil, ofertas, apiKey, soloNuevas, modelo) {
   const resultados = [];
   const TAMANO_LOTE = 20;
   const perfilStr = JSON.stringify(perfil);
 
+  const ofertasAProcesar = soloNuevas
+    ? ofertas.map((o, idx) => ({ o, idx })).filter(({ o }) => !o.prioridad && !o.puntaje).map(({ o, idx }) => o)
+    : ofertas;
+  const mapaIdx = soloNuevas
+    ? ofertasAProcesar.reduce((acc, o, j) => {
+        acc[j] = ofertas.findIndex((x, i) => x === o);
+        return acc;
+      }, {})
+    : null;
+
   // Preservar el orden original y evitar nombres duplicados estándar
-  const listaPura = ofertas.map((o, i) => ({
+  const listaPura = ofertasAProcesar.map((o, i) => ({
     i,
     nombre: (o.Empresa && o.Empresa !== 'No especificada') ? o.Empresa : `Oferta ${i + 1}`,
+    cargo: o.Cargo || o.NombreVacante || '',
     funciones: (o.Funciones || []).join('. '),
     contacto: o.Contacto || ''
   }));
 
+  if (listaPura.length === 0) {
+    return ofertas.map((o) => ({
+      empresa: o.Empresa || 'No especificada',
+      prioridad: o.prioridad || 'baja',
+      puntaje: o.puntaje || 0,
+      motivo: o.motivo || ''
+    }));
+  }
+
   for (let inicio = 0; inicio < listaPura.length; inicio += TAMANO_LOTE) {
     const lote = listaPura.slice(inicio, inicio + TAMANO_LOTE);
     const ofertasStr = lote.map((o, idx) =>
-      `${idx + 1}. Empresa: "${o.nombre}". Funciones: ${o.funciones}`
+      `${idx + 1}. Empresa: "${o.nombre}". Cargo: ${o.cargo || 'No especificado'}. Funciones: ${o.funciones}`
     ).join('\n');
 
     const prompt = `PERFIL DEL CANDIDATO:\n${perfilStr}\n\nLISTA DE OFERTAS:\n${ofertasStr}\n\nEvalúa cada oferta y devuelve el JSON.`;
@@ -452,7 +487,7 @@ async function clasificarOfertas(perfil, ofertas, apiKey) {
         { role: 'user', content: prompt }
       ],
       apiKey,
-      [MODELO_8B, MODELO_70B],
+      resolverModelos(modelo, true),
       4000,
       0.1,
       'json_object'
@@ -489,8 +524,31 @@ async function clasificarOfertas(perfil, ofertas, apiKey) {
     }
   }
 
-  // Ordenar en el orden original
+  // Ordenar en el orden original (índices de listaPura)
   resultados.sort((a, b) => a.i - b.i);
+
+  if (soloNuevas) {
+    // Mapear índices de listaPura -> índices reales de la lista original
+    return ofertas.map((o, idxOriginal) => {
+      const idxLista = Object.keys(mapaIdx).find(k => mapaIdx[k] === idxOriginal);
+      if (idxLista === undefined) {
+        // Oferta ya clasificada: conservar sus datos
+        return {
+          empresa: o.Empresa || 'No especificada',
+          prioridad: o.prioridad || 'baja',
+          puntaje: o.puntaje || 0,
+          motivo: o.motivo || ''
+        };
+      }
+      const res = resultados.find(r => r.i === Number(idxLista));
+      return {
+        empresa: o.Empresa || 'No especificada',
+        prioridad: res?.prioridad || 'baja',
+        puntaje: res?.puntaje || 0,
+        motivo: res?.motivo || ''
+      };
+    });
+  }
 
   return ofertas.map((o, i) => {
     const res = resultados.find(r => r.i === i);

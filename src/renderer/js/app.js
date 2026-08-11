@@ -1003,11 +1003,12 @@ if (btnRankOffers) {
   btnRankOffers.addEventListener('click', async () => {
     const key = cvGroqKey();
     if (!key) { alert('Configura tu API Key de Groq en Configuración.'); return; }
+    const soloNuevas = document.getElementById('rank-only-new') ? document.getElementById('rank-only-new').checked : false;
     btnRankOffers.disabled = true;
     rankSummary.style.display = 'none';
     iaLog('Clasificando ofertas contra tu perfil...');
     try {
-      const res = await window.api.rankOffers({ groqApiKey: key });
+      const res = await window.api.rankOffers({ groqApiKey: key, soloNuevas, modelo: inputModeloRank ? inputModeloRank.value : 'auto' });
       if (res && res.success) {
         const conteo = res.resultados.reduce((acc, r) => {
           acc[r.prioridad] = (acc[r.prioridad] || 0) + 1;
@@ -1018,9 +1019,12 @@ if (btnRankOffers) {
         document.getElementById('rank-low-num').textContent = conteo.baja || 0;
         rankSummary.style.display = '';
         iaLog(`Clasificación completa: ${conteo.alta || 0} alta, ${conteo.media || 0} media, ${conteo.baja || 0} baja.`);
+        markAiStepDone('ai-step-4', true);
+        if (aiProgressSteps.length) setAiStepActive(4);
         await loadSavedOffers();
         refreshPriorityFilters();
         renderResults(currentOffers);
+        updateExportLabel();
       } else {
         alert(res && res.error ? res.error : 'No se pudo clasificar.');
         iaLog('Error al clasificar las ofertas.');

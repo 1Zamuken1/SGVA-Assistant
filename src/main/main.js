@@ -284,7 +284,7 @@ ipcMain.handle('get-cv-profile', async () => {
   return { success: true, perfil: database.obtenerPerfilCV() };
 });
 
-ipcMain.handle('rank-offers', async (event, { groqApiKey }) => {
+ipcMain.handle('rank-offers', async (event, { groqApiKey, soloNuevas, modelo }) => {
   const validationError = validarGroqKey(groqApiKey);
   if (validationError) return { success: false, error: validationError };
 
@@ -297,8 +297,10 @@ ipcMain.handle('rank-offers', async (event, { groqApiKey }) => {
   try {
     setLogFn((msg) => sendIalog(msg));
     const ofertas = conHash.map(({ oferta }) => oferta);
-    sendIalog(`Clasificando ${ofertas.length} ofertas contra tu perfil...`);
-    const resultados = await clasificarOfertas(perfil, ofertas, groqApiKey);
+    const soloNuevas = soloNuevas !== false;
+    const pendientes = soloNuevas ? ofertas.filter(o => !o.prioridad && !o.puntaje) : ofertas;
+    sendIalog(`Clasificando ${pendientes.length} ofertas contra tu perfil${soloNuevas && pendientes.length < ofertas.length ? ` (${ofertas.length - pendientes.length} ya clasificadas se omiten)` : ''}...`);
+    const resultados = await clasificarOfertas(perfil, ofertas, groqApiKey, soloNuevas, modelo);
 
     // Mapear resultados por hash
     const prioridades = {};
