@@ -175,6 +175,27 @@ ipcMain.handle('export-data', async (event, data, format) => {
       
       fs.writeFileSync(filePath, mdContent, 'utf-8');
       return { success: true, filePath };
+    } else if (format === 'json') {
+      const { filePath } = await dialog.showSaveDialog(mainWindow, {
+        title: 'Exportar Ofertas a JSON',
+        defaultPath: path.join(app.getPath('downloads'), 'Ofertas_SENA.json'),
+        filters: [{ name: 'JSON', extensions: ['json'] }]
+      });
+
+      if (!filePath) return { success: false, cancelado: true };
+
+      const jsonData = data.map(oferta => ({
+        Empresa: oferta.Empresa || 'No especificada',
+        Contacto: oferta.Contacto || 'No especificado',
+        FechaLimite: oferta.FechaLimite || oferta.FechaFin || null,
+        Funciones: oferta.Funciones || [],
+        prioridad: oferta.prioridad || null,
+        puntaje: oferta.puntaje || null,
+        motivo: oferta.motivo || null
+      }));
+
+      fs.writeFileSync(filePath, JSON.stringify(jsonData, null, 2), 'utf-8');
+      return { success: true, filePath };
     }
   } catch (error) {
     console.error('Error al exportar:', error);

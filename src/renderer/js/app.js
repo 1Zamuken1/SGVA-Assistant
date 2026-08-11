@@ -608,6 +608,7 @@ if (btnClearDb) {
       currentOffers = [];
       renderResults(currentOffers);
       updateOfferCount(0);
+      updateExportLabel();
       addLog('Base de datos limpiada.');
     } catch (e) {
       console.error('Error al limpiar la base de datos:', e);
@@ -622,6 +623,7 @@ async function loadSavedOffers() {
     currentOffers = saved || [];
     refreshPriorityFilters();
     renderResults(currentOffers);
+    updateExportLabel();
   } catch (e) {
     console.error('No se pudieron cargar ofertas guardadas:', e);
   }
@@ -663,12 +665,14 @@ searchInput.addEventListener('input', (e) => {
   const term = e.target.value.toLowerCase();
   searchClear.style.display = term ? '' : 'none';
   renderResults(getFilteredOffers());
+  updateExportLabel();
 });
 
 searchClear.addEventListener('click', () => {
   searchInput.value = '';
   searchClear.style.display = 'none';
   renderResults(getFilteredOffers());
+  updateExportLabel();
 });
 
 if (priorityFilters) {
@@ -678,6 +682,7 @@ if (priorityFilters) {
       priorityFilters.querySelectorAll('.priority-filter-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       renderResults(getFilteredOffers());
+      updateExportLabel();
     });
   });
 }
@@ -706,19 +711,20 @@ if (wrapperExport && triggerExport && optionsExport) {
       wrapperExport.querySelector('.custom-options').style.display = 'none';
       
       const format = opt.dataset.value;
-      if (currentOffers.length === 0) {
-        alert('No hay ofertas para exportar.');
+      const aExportar = getFilteredOffers();
+      if (aExportar.length === 0) {
+        alert('No hay ofertas para exportar (revisa los filtros).');
         return;
       }
       
       const triggerSpan = triggerExport.querySelector('span');
       const oldText = triggerSpan.textContent;
-      triggerSpan.textContent = 'Exportando...';
+      triggerSpan.textContent = `Exportando ${aExportar.length}...`;
       
       try {
-        const res = await window.api.exportData(currentOffers, format);
+        const res = await window.api.exportData(aExportar, format);
         if (res && res.success) {
-          triggerSpan.textContent = '¡Guardado!';
+          triggerSpan.textContent = `¡Guardados ${aExportar.length}!`;
           setTimeout(() => { triggerSpan.textContent = oldText; }, 2000);
         } else {
           triggerSpan.textContent = oldText;
@@ -732,6 +738,14 @@ if (wrapperExport && triggerExport && optionsExport) {
       }
     });
   });
+}
+
+// Actualiza el label del botón Exportar con el conteo visible
+function updateExportLabel() {
+  if (!triggerExport) return;
+  const count = getFilteredOffers().length;
+  const span = triggerExport.querySelector('span');
+  if (span) span.textContent = `Exportar (${count})`;
 }
 
 // ===== Vista IA: CV, perfil, clasificación y correos =====
