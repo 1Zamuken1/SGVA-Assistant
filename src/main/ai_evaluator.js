@@ -336,7 +336,7 @@ function resolverModelos(modelo, preferirCalidad) {
   if (eleccion === '8b') return [MODELO_8B];
   if (eleccion === '70b') return [MODELO_70B, MODELO_8B];
   // auto: por defecto calidad (70B) para correos y clasificación; rapidez queda para quien elija 8B
-  return preferirCalidad ? [MODELO_70B, MODELO_8B] : [MODELO_8B, MODELO_70B];
+  return [MODELO_70B, MODELO_8B];
 }
 
 // Llamada común a Groq con reintentos, soporte de múltiples modelos (fallback)
